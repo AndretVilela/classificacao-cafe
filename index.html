@@ -544,7 +544,12 @@ async function carregarDoOneDrive() {
     if(!checkR.ok) { setSinc('ok','Conectado'); return; }
     const fileData = await checkR.json();
     const fileId = fileData.id;
+    // Verificar se o arquivo é um Excel válido antes de tentar abrir
+    const metaR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}?select=name,size,file`,{headers:{Authorization:'Bearer '+msToken}});
+    const meta = await metaR.json();
+    if(!meta.file || meta.size < 1000) { setSinc('ok','Conectado'); return; }
     const abasR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!abasR.ok) { setSinc('ok','Conectado'); return; }
     const abasData = await abasR.json();
     const abas = (abasData.value||[]).map(s=>s.name);
     if(!abas.includes(mes)) { setSinc('ok','Conectado'); return; }
@@ -661,7 +666,7 @@ function showScreen(n, btn) {
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('screen-'+n).classList.add('active');
   if(btn) btn.classList.add('active');
-  if(n==='historico') { renderHist(); if(msToken) carregarDoOneDrive(); }
+  if(n==='historico') { renderHist(); if(msToken) carregarDoOneDrive().catch(()=>{}); }
 }
 
 function selectClf(nome, id) {
@@ -784,7 +789,6 @@ function onConnected() {
   document.getElementById('cfg-status').style.color = '#2E7D32';
   setSinc('ok','Conectado');
   toastOk('Microsoft conectado!');
-  setTimeout(() => carregarDoOneDrive(), 1000);
 }
 
 async function sincReg(reg) {
