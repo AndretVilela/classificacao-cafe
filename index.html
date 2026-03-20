@@ -870,22 +870,22 @@ async function appendExcel(reg, fotoUrl) {
     reg.aprov||'', impTotal||'', reg.impPau||'', reg.impPedra||'', reg.impCasca||'',
     reg.obs||'', fotoUrl
   ];
-  const appendResp = await fetch(
-    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/tables/TabelaClass/rows/add`,
-    { method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'}, body:JSON.stringify({values:[linha]}) }
-  ).catch(()=>({ok:false}));
-  if(!appendResp.ok) {
+  const sessionId2 = await criarSessaoWorkbook(fileId);
+  const apiHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+  if(sessionId2) apiHdrs['workbook-session-id'] = sessionId2;
+  try {
     const usedResp = await fetch(
       `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,
-      {headers:{Authorization:'Bearer '+msToken}}
+      {headers:apiHdrs}
     );
     const usedData = await usedResp.json().catch(()=>({rowCount:1}));
     const nextRow = (usedData.rowCount||1) + 1;
-    const colEnd = 'V';
     await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:${colEnd}${nextRow}')`,
-      { method:'PATCH', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'}, body:JSON.stringify({values:[linha]}) }
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:V${nextRow}')`,
+      {method:'PATCH', headers:apiHdrs, body:JSON.stringify({values:[linha]})}
     );
+  } finally {
+    await fecharSessaoWorkbook(fileId, sessionId2);
   }
 }
 
@@ -917,41 +917,63 @@ async function getOrCreateExcel(path, mes) {
   return d.id;
 }
 
-async function garantirAba(fileId, mes) {
-  // Aguardar arquivo estar pronto
-  await new Promise(r=>setTimeout(r,2000));
-  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
-  if(!r.ok) {
-    const errBody = await r.json().catch(()=>({}));
-    throw new Error('Erro ao listar abas: '+r.status+' — '+(errBody.error?.message||''));
-  }
+async function criarSessaoWorkbook(fileId) {
+  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/createSession`,{
+    method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
+    body:JSON.stringify({persistChanges:true})
+  });
+  if(!r.ok) return null;
   const d = await r.json();
-  const abas = (d.value||[]).map(s=>s.name);
-  console.log('Abas existentes:', abas);
-  if(!abas.includes(mes)) {
-    console.log('Criando aba:', mes);
-    const crAba = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{
-      method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
-      body:JSON.stringify({name:mes})
-    });
-    if(!crAba.ok) {
-      const e = await crAba.json().catch(()=>({}));
-      throw new Error('Erro ao criar aba: '+crAba.status+' — '+(e.error?.message||''));
+  return d.id || null;
+}
+
+async function fecharSessaoWorkbook(fileId, sessionId) {
+  if(!sessionId) return;
+  await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/closeSession`,{
+    method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json','workbook-session-id':sessionId}
+  }).catch(()=>{});
+}
+
+async function garantirAba(fileId, mes) {
+  await new Promise(r=>setTimeout(r,3000));
+  const sessionId = await criarSessaoWorkbook(fileId);
+  const hdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+  if(sessionId) hdrs['workbook-session-id'] = sessionId;
+  try {
+    const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:hdrs});
+    if(!r.ok) {
+      const errBody = await r.json().catch(()=>({}));
+      throw new Error('Erro ao listar abas: '+r.status+' — '+(errBody.error?.message||''));
     }
-    await new Promise(r=>setTimeout(r,2000));
-  }
-  const hdrs = [['Data','Classificador','Lote/NF','Produtor','Sacas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto']];
-  const checkHdr = await fetch(
-    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
-    {headers:{Authorization:'Bearer '+msToken}}
-  );
-  const hdrData = await checkHdr.json().catch(()=>({values:[['']]}));
-  if(!hdrData.values?.[0]?.[0]) {
-    await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:V1')`,
-      { method:'PATCH', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'}, body:JSON.stringify({values:hdrs}) }
+    const d = await r.json();
+    const abas = (d.value||[]).map(s=>s.name);
+    console.log('Abas existentes:', abas);
+    if(!abas.includes(mes)) {
+      console.log('Criando aba:', mes);
+      const crAba = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{
+        method:'POST', headers:hdrs, body:JSON.stringify({name:mes})
+      });
+      if(!crAba.ok) {
+        const e = await crAba.json().catch(()=>({}));
+        throw new Error('Erro ao criar aba: '+crAba.status+' — '+(e.error?.message||''));
+      }
+      await new Promise(r=>setTimeout(r,2000));
+    }
+    const cabHdrs = [['Data','Classificador','Lote/NF','Produtor','Sacas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto']];
+    const checkHdr = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
+      {headers:hdrs}
     );
-    await new Promise(r=>setTimeout(r,1000));
+    const hdrData = await checkHdr.json().catch(()=>({values:[['']]}));
+    if(!hdrData.values?.[0]?.[0]) {
+      await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:V1')`,
+        {method:'PATCH', headers:hdrs, body:JSON.stringify({values:cabHdrs})}
+      );
+      await new Promise(r=>setTimeout(r,1000));
+    }
+  } finally {
+    await fecharSessaoWorkbook(fileId, sessionId);
   }
 }
 
