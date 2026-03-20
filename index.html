@@ -790,8 +790,18 @@ function onConnected() {
 async function sincReg(reg) {
   setSinc('pending','Sincronizando...');
   try {
+    // Testar token primeiro
+    const testR = await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+msToken}});
+    if(!testR.ok) { throw new Error('Token expirado. Reconecte o Microsoft.'); }
+    const me = await testR.json();
+    console.log('Usuário:', me.userPrincipalName);
+
     let fotoUrl = '';
-    if(reg.foto) fotoUrl = await uploadFoto(reg);
+    if(reg.foto) {
+      try { fotoUrl = await uploadFoto(reg); }
+      catch(e) { console.warn('Foto falhou:', e.message); fotoUrl = ''; }
+    }
+
     await appendExcel(reg, fotoUrl);
     reg.sinc = true; reg.fotoUrl = fotoUrl;
     salvarLocal();
@@ -799,7 +809,8 @@ async function sincReg(reg) {
     toastOk('Sincronizado com OneDrive!');
   } catch(e) {
     setSinc('error','Erro');
-    toastErr('Erro ao sincronizar: ' + (e.message||'Verifique a conexão.'));
+    console.error('Erro sincronização:', e);
+    toastErr('Erro: ' + (e.message||'Verifique a conexão.'));
   }
 }
 
@@ -897,16 +908,27 @@ async function getOrCreateExcel(path, mes) {
 }
 
 async function garantirAba(fileId, mes) {
+  // Aguardar arquivo estar pronto
+  await new Promise(r=>setTimeout(r,2000));
   const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
-  if(!r.ok) throw new Error('Erro ao listar abas: '+r.status);
+  if(!r.ok) {
+    const errBody = await r.json().catch(()=>({}));
+    throw new Error('Erro ao listar abas: '+r.status+' — '+(errBody.error?.message||''));
+  }
   const d = await r.json();
   const abas = (d.value||[]).map(s=>s.name);
+  console.log('Abas existentes:', abas);
   if(!abas.includes(mes)) {
-    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{
+    console.log('Criando aba:', mes);
+    const crAba = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{
       method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
       body:JSON.stringify({name:mes})
     });
-    await new Promise(r=>setTimeout(r,1000));
+    if(!crAba.ok) {
+      const e = await crAba.json().catch(()=>({}));
+      throw new Error('Erro ao criar aba: '+crAba.status+' — '+(e.error?.message||''));
+    }
+    await new Promise(r=>setTimeout(r,2000));
   }
   const hdrs = [['Data','Classificador','Lote/NF','Produtor','Sacas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto']];
   const checkHdr = await fetch(
@@ -919,6 +941,7 @@ async function garantirAba(fileId, mes) {
       `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:V1')`,
       { method:'PATCH', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'}, body:JSON.stringify({values:hdrs}) }
     );
+    await new Promise(r=>setTimeout(r,1000));
   }
 }
 
