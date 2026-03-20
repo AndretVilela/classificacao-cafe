@@ -375,15 +375,31 @@ body {
       <div class="card">
         <div class="section-title">Análise</div>
         <div class="form-grid">
-          <div class="form-group"><label>% Aproveitamento</label><input type="number" id="f-aprov" placeholder="0,00" step="0.01"></div>
-          <div class="form-group"><label>% Peneira Fundo</label><input type="number" id="f-penfundo-e" placeholder="0,00" step="0.01"></div>
+          <div class="form-group"><label>% Aproveitamento</label><input type="number" id="f-aprov" placeholder="0,00" step="0.01" oninput="calcImpTotal()"></div>
+          <div class="form-group"><label>% Peneira Fundo</label><input type="number" id="f-penfundo-e" placeholder="0,00" step="0.01" oninput="calcImpTotal()"></div>
         </div>
         <div style="margin-top:1rem">
           <div class="section-title">% Impureza por tipo</div>
           <div class="impureza-grid">
-            <div class="form-group"><label>Pau (%)</label><input type="number" id="f-imp-pau" placeholder="0,00" step="0.01"></div>
-            <div class="form-group"><label>Pedra / Torrão (%)</label><input type="number" id="f-imp-pedra" placeholder="0,00" step="0.01"></div>
-            <div class="form-group"><label>Casca (%)</label><input type="number" id="f-imp-casca" placeholder="0,00" step="0.01"></div>
+            <div class="form-group"><label>Pau (%)</label><input type="number" id="f-imp-pau" placeholder="0,00" step="0.01" oninput="calcImpTotal()"></div>
+            <div class="form-group"><label>Pedra / Torrão (%)</label><input type="number" id="f-imp-pedra" placeholder="0,00" step="0.01" oninput="calcImpTotal()"></div>
+            <div class="form-group"><label>Casca (%)</label><input type="number" id="f-imp-casca" placeholder="0,00" step="0.01" oninput="calcImpTotal()"></div>
+          </div>
+          <div style="margin-top:10px;background:var(--cream);border-radius:8px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:13px;color:var(--text-mid);font-weight:500">Total Impureza</span>
+            <span id="imp-total-display" style="font-size:16px;font-weight:500;color:var(--cafe)">0,00%</span>
+          </div>
+        </div>
+        <div style="margin-top:8px;background:var(--cream);border-radius:8px;padding:10px 13px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:12px;color:var(--text-light)">Verificação (deve somar 100%)</span>
+            <span id="soma-total-display" style="font-size:13px;font-weight:500;color:var(--text-mid)">0,00%</span>
+          </div>
+          <div style="background:var(--cream-dark);border-radius:4px;height:8px;overflow:hidden">
+            <div id="soma-barra" style="height:100%;background:var(--cafe-light);border-radius:4px;transition:width 0.3s;width:0%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--text-light)">
+            <span>Aproveit. + Fundo + Impureza = 100%</span>
           </div>
         </div>
         <div style="margin-top:1rem">
@@ -515,6 +531,27 @@ function salvarLocal() {
   try { localStorage.setItem(k, JSON.stringify(dados)); } catch(e) {}
 }
 
+function calcImpTotal() {
+  const pau = parseFloat(document.getElementById('f-imp-pau')?.value)||0;
+  const pedra = parseFloat(document.getElementById('f-imp-pedra')?.value)||0;
+  const casca = parseFloat(document.getElementById('f-imp-casca')?.value)||0;
+  const total = pau + pedra + casca;
+  const el = document.getElementById('imp-total-display');
+  if(el) el.textContent = total.toFixed(2).replace('.',',') + '%';
+  const aprov = parseFloat(document.getElementById('f-aprov')?.value)||0;
+  const fundo = parseFloat(document.getElementById('f-penfundo-e')?.value)||0;
+  const soma = aprov + fundo + total;
+  const somaEl = document.getElementById('soma-total-display');
+  const barraEl = document.getElementById('soma-barra');
+  if(somaEl) somaEl.textContent = soma.toFixed(2).replace('.',',') + '%';
+  if(barraEl) {
+    const pct = Math.min(soma, 100);
+    barraEl.style.width = pct + '%';
+    barraEl.style.background = Math.abs(soma - 100) < 0.1 ? '#4CAF50' : soma > 100 ? '#E53935' : 'var(--cafe-light)';
+  }
+  if(somaEl) somaEl.style.color = Math.abs(soma-100)<0.1 ? '#2E7D32' : soma>100 ? '#C62828' : 'var(--text-mid)';
+}
+
 function init() {
   const h = new Date(), pad = n => String(n).padStart(2,'0');
   document.getElementById('f-data').value = `${h.getFullYear()}-${pad(h.getMonth()+1)}-${pad(h.getDate())}`;
@@ -607,6 +644,20 @@ function getDefeitos() {
 
 async function salvar() {
   if(!clf) { alert('Selecione o classificador.'); return; }
+  if(tipo==='escolha') {
+    const aprov = parseFloat(document.getElementById('f-aprov').value)||0;
+    const fundo = parseFloat(document.getElementById('f-penfundo-e').value)||0;
+    const pau = parseFloat(document.getElementById('f-imp-pau').value)||0;
+    const pedra = parseFloat(document.getElementById('f-imp-pedra').value)||0;
+    const casca = parseFloat(document.getElementById('f-imp-casca').value)||0;
+    const soma = aprov + fundo + pau + pedra + casca;
+    if(aprov > 0 || fundo > 0 || pau > 0 || pedra > 0 || casca > 0) {
+      if(Math.abs(soma - 100) > 0.1) {
+        toastErr('Verificar classificação: Aproveitamento + Fundo + Impureza = ' + soma.toFixed(2) + '% (deve ser 100%)');
+        return;
+      }
+    }
+  }
   if(!tipo) { alert('Selecione o tipo de café.'); return; }
   if(!document.getElementById('f-produtor').value) { alert('Informe o produtor/fazenda.'); return; }
 
@@ -695,69 +746,122 @@ async function sincReg(reg) {
 async function uploadFoto(reg) {
   const d = new Date(reg.data+'T12:00:00');
   const sub = MESES[d.getMonth()] + ' ' + d.getFullYear();
-  const nome = `foto_${(reg.produtor||'sem').replace(/\s+/g,'_')}_${reg.data}_${reg.id}.jpg`;
-  const path = `${odPath}/Fotos/${sub}/${nome}`;
+  const nomeProdutor = (reg.produtor||'sem').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_-]/g,'');
+  const nome = `foto_${nomeProdutor}_${reg.data}_${reg.id}.jpg`;
+  const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const subNorm = sub.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const pathFoto = `${pastaRaiz}/Fotos/${subNorm}/${nome}`;
   const blob = b64toBlob(reg.foto);
-  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(path)}:/content`,{
+  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(pathFoto)}:/content`,{
     method:'PUT', headers:{Authorization:'Bearer '+msToken,'Content-Type':'image/jpeg'}, body:blob
   });
-  if(!r.ok) throw new Error('Falha upload foto');
+  if(!r.ok) {
+    const err = await r.json().catch(()=>({}));
+    throw new Error('Falha upload foto: ' + (err.error?.message||r.status));
+  }
   const item = await r.json();
-  const sr = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${item.id}/createLink`,{
-    method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
-    body:JSON.stringify({type:'view',scope:'organization'})
-  });
-  const sd = await sr.json();
-  return sd.link?.webUrl || item.webUrl || '';
+  try {
+    const sr = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${item.id}/createLink`,{
+      method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
+      body:JSON.stringify({type:'view',scope:'organization'})
+    });
+    const sd = await sr.json();
+    return sd.link?.webUrl || item.webUrl || item['@microsoft.graph.downloadUrl'] || '';
+  } catch(e) {
+    return item.webUrl || '';
+  }
 }
 
 async function appendExcel(reg, fotoUrl) {
   const d = new Date(reg.data+'T12:00:00');
   const ano = d.getFullYear(), mes = MESES[d.getMonth()];
-  const nomeArq = `Classificações ${ano}.xlsx`;
-  const pathArq = `${odPath}/${nomeArq}`;
-  let fileId = await getOrCreateExcel(pathArq);
+  const nomeArq = `Classificacoes_${ano}.xlsx`;
+  const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const pathArq = `${pastaRaiz}/${nomeArq}`;
+  let fileId = await getOrCreateExcel(pathArq, mes);
   await garantirAba(fileId, mes);
   const tl = reg.tipo==='beneficiado'?'Beneficiado':reg.tipo==='coco'?'Em Coco':'Escolha';
   const df = d.toLocaleDateString('pt-BR');
   const def = reg.defeitos ? Object.entries(reg.defeitos).map(([k,v])=>k+':'+v).join(' | ') : '';
-  const linha = [df,reg.clf||'',reg.lote||'',reg.produtor||'',reg.sacas||'',tl,
-    reg.catacao||'',reg.impureza||'',reg.umidade||'',reg.pen17||'',reg.penfundo||'',
-    reg.renda||'',reg.bebida||'',reg.bebidaObs||'',def,
-    reg.aprov||'',reg.impPau||'',reg.impPedra||'',reg.impCasca||'',
-    reg.obs||'',fotoUrl];
-  const url = `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')/insert`;
-  await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},body:JSON.stringify({shift:'Down'})}).catch(()=>{});
-  await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A2:U2')`,{
-    method:'PATCH', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
-    body:JSON.stringify({values:[linha]})
-  });
+  const impTotal = reg.tipo==='escolha' ? (
+    (parseFloat(reg.impPau)||0) + (parseFloat(reg.impPedra)||0) + (parseFloat(reg.impCasca)||0)
+  ).toFixed(2) : '';
+  const linha = [
+    df, reg.clf||'', reg.lote||'', reg.produtor||'', reg.sacas||'', tl,
+    reg.catacao||'', reg.impureza||'', reg.umidade||'', reg.pen17||'', reg.penfundo||'',
+    reg.renda||'', reg.bebida||'', reg.bebidaObs||'', def,
+    reg.aprov||'', impTotal||'', reg.impPau||'', reg.impPedra||'', reg.impCasca||'',
+    reg.obs||'', fotoUrl
+  ];
+  const appendResp = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/tables/TabelaClass/rows/add`,
+    { method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'}, body:JSON.stringify({values:[linha]}) }
+  ).catch(()=>({ok:false}));
+  if(!appendResp.ok) {
+    const usedResp = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,
+      {headers:{Authorization:'Bearer '+msToken}}
+    );
+    const usedData = await usedResp.json().catch(()=>({rowCount:1}));
+    const nextRow = (usedData.rowCount||1) + 1;
+    const colEnd = 'V';
+    await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:${colEnd}${nextRow}')`,
+      { method:'PATCH', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'}, body:JSON.stringify({values:[linha]}) }
+    );
+  }
 }
 
-async function getOrCreateExcel(path) {
-  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(path)}`,{headers:{Authorization:'Bearer '+msToken}});
-  if(r.ok) { const d=await r.json(); return d.id; }
-  const cr = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(path)}:/content`,{
-    method:'PUT', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},
-    body:new Blob([''],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})
+async function getOrCreateExcel(path, mes) {
+  const checkR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(path)}`,{headers:{Authorization:'Bearer '+msToken}});
+  if(checkR.ok) { const d=await checkR.json(); return d.id; }
+  const createR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(path)}:/content`,{
+    method:'PUT',
+    headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},
+    body:gerarExcelVazio()
   });
-  const d=await cr.json(); return d.id;
+  if(!createR.ok) {
+    const err = await createR.json().catch(()=>({}));
+    throw new Error('Falha ao criar Excel: '+(err.error?.message||createR.status));
+  }
+  const d = await createR.json();
+  await new Promise(r=>setTimeout(r,2000));
+  return d.id;
+}
+
+function gerarExcelVazio() {
+  const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+  return new Blob([xml],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
 
 async function garantirAba(fileId, mes) {
   const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
+  if(!r.ok) throw new Error('Erro ao listar abas: '+r.status);
   const d = await r.json();
   const abas = (d.value||[]).map(s=>s.name);
-  if(abas.includes(mes)) return;
-  await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{
-    method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
-    body:JSON.stringify({name:mes})
-  });
-  const hdrs = [['Data','Classificador','Lote/NF','Produtor','Sacas','Tipo','%Catação','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda','Bebida','Obs.Bebida','Defeitos','%Aproveit.','ImpPau%','ImpPedra%','ImpCasca%','Observações','Foto']];
-  await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:U1')`,{
-    method:'PATCH', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
-    body:JSON.stringify({values:hdrs})
-  });
+  if(!abas.includes(mes)) {
+    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{
+      method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
+      body:JSON.stringify({name:mes})
+    });
+    await new Promise(r=>setTimeout(r,1000));
+  }
+  const hdrs = [['Data','Classificador','Lote/NF','Produtor','Sacas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto']];
+  const checkHdr = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
+    {headers:{Authorization:'Bearer '+msToken}}
+  );
+  const hdrData = await checkHdr.json().catch(()=>({values:[['']]}));
+  if(!hdrData.values?.[0]?.[0]) {
+    await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:V1')`,
+      { method:'PATCH', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'}, body:JSON.stringify({values:hdrs}) }
+    );
+  }
 }
 
 function b64toBlob(b64) {
