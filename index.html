@@ -525,7 +525,7 @@ const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Ag
 const CLIENT_ID = 'ff4e57e2-4fc1-4b2e-8e4a-28a2df5a20c9';
 const TENANT_ID = '9a66e204-c69d-486c-97ff-40f69be9595f';
 const REDIRECT_URI = 'https://andretvilela.github.io/classificacao-cafe/';
-const MS_SCOPES = 'Files.ReadWrite.All User.Read offline_access';
+const MS_SCOPES = 'Files.ReadWrite User.Read offline_access';
 const TOKEN_KEY = 'cafe_ms_token';
 const TOKEN_EXP_KEY = 'cafe_ms_token_exp';
 
@@ -564,7 +564,7 @@ function silentRefresh() {
   // Tenta refresh silencioso via iframe
   const iframe = document.createElement('iframe');
   iframe.style.display = 'none';
-  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(MS_SCOPES)}&prompt=none&response_mode=fragment`;
+  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(MS_SCOPES)}&prompt=none&login_hint=${encodeURIComponent(LOGIN_HINT)}&response_mode=fragment`;
   iframe.src = url;
   iframe.onload = () => {
     try {
@@ -920,9 +920,10 @@ function setFormularioBloqueado(bloqueado) {
   if(overlay) overlay.style.display = bloqueado ? 'flex' : 'none';
 }
 
+const LOGIN_HINT = 'contato@cafevilela.com.br';
+
 function handleMSAuth() {
   if(msToken) {
-    // Já conectado — pergunta se quer desconectar ou trocar conta
     if(confirm('Deseja desconectar a conta Microsoft?\n\nAo confirmar, você precisará fazer login novamente.')) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(TOKEN_EXP_KEY);
@@ -932,7 +933,14 @@ function handleMSAuth() {
     }
     return;
   }
-  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(MS_SCOPES)}&response_mode=fragment&prompt=select_account`;
+  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`
+    + `?client_id=${clientId}`
+    + `&response_type=token`
+    + `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`
+    + `&scope=${encodeURIComponent(MS_SCOPES)}`
+    + `&response_mode=fragment`
+    + `&login_hint=${encodeURIComponent(LOGIN_HINT)}`
+    + `&prompt=login`;
   window.location.href = url;
 }
 
@@ -996,14 +1004,14 @@ async function uploadFoto(reg) {
 // Busca qualquer foto do OneDrive pelo path salvo no Excel
 // Usada pelo modal E pelo gerador de laudo — mesma lógica, uma só função
 async function buscarFotoOneDrive(path) {
-  if(!path || !msToken) return null;
+  if(!path || !msToken) { console.log('[buscarFoto] Sem path ou token.'); return null; }
   try {
     const pathEnc = path.split('/').map(p => encodeURIComponent(p)).join('/');
-    const r = await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}:/content`,
-      {headers:{Authorization:'Bearer '+msToken}}
-    );
-    if(!r.ok) return null;
+    const url = `https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}:/content`;
+    console.log('[buscarFoto] GET', url);
+    const r = await fetch(url, {headers:{Authorization:'Bearer '+msToken}});
+    console.log('[buscarFoto] Status:', r.status);
+    if(!r.ok) { const e = await r.json().catch(()=>{}); console.warn('[buscarFoto] Erro:', e); return null; }
     const blob = await r.blob();
     return await new Promise(res => {
       const fr = new FileReader();
@@ -1011,7 +1019,7 @@ async function buscarFotoOneDrive(path) {
       fr.readAsDataURL(blob);
     });
   } catch(e) {
-    console.warn('Falha ao buscar foto:', path, e);
+    console.warn('[buscarFoto] Exceção:', path, e);
     return null;
   }
 }
@@ -1022,11 +1030,13 @@ async function carregarFotoModal(reg) {
   fi.style.display = 'none';
   // 1. Base64 local — instantâneo
   if(reg.foto) { fi.src = reg.foto; fi.style.display = 'block'; return; }
-  // 2. Path salvo localmente (registro recente neste dispositivo)
+  // 2. Path salvo — busca no OneDrive
   const path = reg.fotoPath || reg.fotoUrl || '';
-  if(!path) return;
+  console.log('[Foto] fotoPath:', reg.fotoPath, '| fotoUrl:', reg.fotoUrl, '| path usado:', path);
+  if(!path) { console.log('[Foto] Sem path disponível.'); return; }
   const src = await buscarFotoOneDrive(path);
   if(src) { fi.src = src; fi.style.display = 'block'; }
+  else { console.log('[Foto] buscarFotoOneDrive retornou null para:', path); }
 }
 
 async function appendExcel(reg, fotoUrl) {
