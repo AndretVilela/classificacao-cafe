@@ -345,7 +345,7 @@ body {
         <div id="campo-renda" style="display:none;margin-top:1rem">
           <div class="section-title">Rendimento</div>
           <div style="max-width:200px">
-            <div class="form-group"><label>Renda (sc/60kg)</label><input type="number" id="f-renda" placeholder="0,00" step="0.01"></div>
+            <div class="form-group"><label>Renda (%)</label><input type="number" id="f-renda" placeholder="0,00" step="0.01" min="0" max="100"></div>
           </div>
         </div>
         <div style="margin-top:1rem">
@@ -1094,7 +1094,7 @@ async function garantirAba(fileId, mes) {
     }
     await new Promise(r=>setTimeout(r,3000));
   }
-  const cabHdrs = [['Data','Classificador','Lote/NF','Produtor','Sacas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto']];
+  const cabHdrs = [['Data','Classificador','Lote/NF','Produtor','Sacas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto']];
   await new Promise(r=>setTimeout(r,1000));
   const checkHdr = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
@@ -1132,7 +1132,7 @@ function buildCard(c) {
     if(c.umidade) itens.push(['Umidade',c.umidade+'%']);
     if(c.pen17) itens.push(['Peneira 17+',c.pen17+'%']);
     if(c.penfundo) itens.push(['Pen. Fundo',c.penfundo+'%']);
-    if(c.renda) itens.push(['Renda',c.renda+' sc']);
+    if(c.renda) itens.push(['Renda',c.renda+'%']);
     if(c.defeitos&&Object.keys(c.defeitos).length) itens.push(['Defeitos',Object.entries(c.defeitos).map(([k,v])=>k+':'+v).join(' ')]);
   } else {
     if(c.aprov) itens.push(['Aproveit.',c.aprov+'%']);
@@ -1141,7 +1141,8 @@ function buildCard(c) {
     if(imp) itens.push(['Impureza',imp]);
   }
   const grid = itens.map(([l,v])=>`<div class="sc-item"><div class="sc-item-lbl">${l}</div><div class="sc-item-val">${v}</div></div>`).join('');
-  const fotoHtml = c.foto?`<img class="sc-foto" src="${c.foto}" crossorigin="anonymous">`:`<div class="sc-no-foto">☕</div>`;
+  const srcFoto = c.foto || c.fotoUrl || '';
+  const fotoHtml = srcFoto ? `<img class="sc-foto" src="${srcFoto}" crossorigin="anonymous">` : `<div class="sc-no-foto">☕</div>`;
   const bebHtml = c.bebida?`<div class="sc-bebida"><div class="sc-bebida-lbl">Bebida</div><div class="sc-bebida-val">${c.bebida}${c.bebidaObs?' · '+c.bebidaObs:''}</div></div>`:'';
   const obsHtml = c.obs?`<div class="sc-obs">${c.obs}</div>`:'';
   return `<div class="sc-head"><div class="sc-head-icon">☕</div><div><div class="sc-head-title">Laudo de Classificação</div><div class="sc-head-sub">${df} · ${c.clf||''}</div></div></div>
@@ -1168,23 +1169,68 @@ async function gerarImg(c) {
 function textoLaudo(c) {
   const tl = c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
   const df = c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'';
-  return `*Laudo de Classificação — Café Vilela*\n\n*Produtor:* ${c.produtor||'—'}\n*Data:* ${df}\n*Tipo:* ${tl}\n*Sacas:* ${c.sacas||'—'} sacas\n*Lote/NF:* ${c.lote||'—'}\n*Bebida:* ${c.bebida||'—'}${c.bebidaObs?' ('+c.bebidaObs+')':''}`;
+  let linhas = [
+    '*Laudo de Classificação — Café Vilela*',
+    '',
+    `*Produtor:* ${c.produtor||'—'}`,
+    `*Data:* ${df}`,
+    `*Classificador:* ${c.clf||'—'}`,
+    `*Tipo:* ${tl}`,
+    `*Sacas:* ${c.sacas||'—'} sacas`,
+    `*Lote/NF:* ${c.lote||'—'}`,
+  ];
+  if(c.tipo !== 'escolha') {
+    if(c.catacao)  linhas.push(`*% Catação:* ${c.catacao}%`);
+    if(c.impureza) linhas.push(`*% Impureza:* ${c.impureza}%`);
+    if(c.umidade)  linhas.push(`*Umidade:* ${c.umidade}%`);
+    if(c.pen17)    linhas.push(`*Peneira 17+:* ${c.pen17}%`);
+    if(c.penfundo) linhas.push(`*Peneira Fundo:* ${c.penfundo}%`);
+    if(c.renda)    linhas.push(`*Renda:* ${c.renda}%`);
+    if(c.defeitos && Object.keys(c.defeitos).length)
+      linhas.push(`*Defeitos:* ${Object.entries(c.defeitos).map(([k,v])=>k+': '+v).join(' | ')}`);
+  } else {
+    if(c.aprov)    linhas.push(`*Aproveitamento:* ${c.aprov}%`);
+    if(c.penfundo) linhas.push(`*Peneira Fundo:* ${c.penfundo}%`);
+    const impTotal = ((parseFloat(c.impPau)||0)+(parseFloat(c.impPedra)||0)+(parseFloat(c.impCasca)||0)).toFixed(2);
+    if(parseFloat(impTotal)>0) {
+      linhas.push(`*Impureza Total:* ${impTotal}%`);
+      if(c.impPau)   linhas.push(`  · Pau: ${c.impPau}%`);
+      if(c.impPedra) linhas.push(`  · Pedra/Torrão: ${c.impPedra}%`);
+      if(c.impCasca) linhas.push(`  · Casca: ${c.impCasca}%`);
+    }
+  }
+  if(c.bebida) linhas.push(`*Bebida:* ${c.bebida}${c.bebidaObs?' ('+c.bebidaObs+')':''}`);
+  if(c.obs)    linhas.push(`*Observações:* ${c.obs}`);
+  linhas.push('', '_Café Vilela · Classificação_');
+  return linhas.join('\n');
 }
 
 async function shareWA() {
   const c = dados.find(x=>x.id===itemId); if(!c) return;
-  closeModal(); toastOk('Gerando imagem...');
+  closeModal();
+  toastOk('Gerando imagem...');
   const img = await gerarImg(c);
-  const blob = await (await fetch(img)).blob();
-  const file = new File([blob],'laudo.png',{type:'image/png'});
   const txt = textoLaudo(c);
-  if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
-    await navigator.share({text:txt, files:[file]});
-  } else {
-    const a=document.createElement('a'); a.href=img; a.download=`laudo_${c.produtor||'cafe'}.png`; a.click();
-    setTimeout(()=>window.open(`https://wa.me/?text=${encodeURIComponent(txt)}','_blank`),600);
-    toastOk('Imagem baixada! Cole no WhatsApp.');
-  }
+
+  // Tenta Web Share API (Android Chrome nativo — envia imagem + texto juntos)
+  try {
+    const blob = await (await fetch(img)).blob();
+    const file = new File([blob], 'laudo.png', {type:'image/png'});
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+      await navigator.share({title:'Laudo de Classificação', text: txt, files:[file]});
+      return;
+    }
+  } catch(e) { /* fallback abaixo */ }
+
+  // Fallback: baixa a imagem e abre WhatsApp Web com o texto
+  const a = document.createElement('a');
+  a.href = img;
+  a.download = `laudo_${(c.produtor||'cafe').replace(/\s+/g,'_')}.png`;
+  a.click();
+  setTimeout(() => {
+    window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+    toastOk('Imagem baixada! Abra o WhatsApp, cole o texto e anexe a imagem.');
+  }, 800);
 }
 
 async function shareEmail() {
@@ -1242,7 +1288,7 @@ function verDetalhe(id) {
     if(c.umidade) rows.push(['Umidade',c.umidade+'%']);
     if(c.pen17) rows.push(['Peneira 17+',c.pen17+'%']);
     if(c.penfundo) rows.push(['Peneira Fundo',c.penfundo+'%']);
-    if(c.renda) rows.push(['Renda',c.renda]);
+    if(c.renda) rows.push(['Renda',c.renda+'%']);
     if(c.bebida) rows.push(['Bebida',c.bebida]);
     if(c.bebidaObs) rows.push(['Obs. Bebida',c.bebidaObs]);
     if(c.defeitos&&Object.keys(c.defeitos).length) rows.push(['Defeitos',Object.entries(c.defeitos).map(([k,v])=>k+': '+v).join(', ')]);
@@ -1259,7 +1305,14 @@ function verDetalhe(id) {
   rows.push(['Status',c.sinc?'Sincronizado ✓':'Pendente sincronização']);
   document.getElementById('modal-body').innerHTML = rows.map(([k,v])=>`<div class="modal-row"><span>${k}</span><span>${v}</span></div>`).join('');
   const fi = document.getElementById('modal-foto');
-  if(c.foto){fi.src=c.foto;fi.style.display='block';}else{fi.style.display='none';}
+  const srcFoto = c.foto || c.fotoUrl || '';
+  if(srcFoto) {
+    fi.src = srcFoto;
+    fi.style.display = 'block';
+    fi.onerror = () => { fi.style.display = 'none'; };
+  } else {
+    fi.style.display = 'none';
+  }
   document.getElementById('btn-sinc').style.display = (!c.sinc&&msToken)?'block':'none';
   document.getElementById('share-section').style.display = 'block';
   document.getElementById('modal').classList.add('open');
