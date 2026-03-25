@@ -28,6 +28,7 @@ body {
   background: var(--cream);
   min-height: 100vh;
   color: var(--text);
+  overscroll-behavior-y: contain; /* bloqueia pull-to-refresh no mobile */
 }
 .app { max-width: 860px; margin: 0 auto; padding: 1.25rem; }
 
@@ -445,6 +446,9 @@ body {
           <div style="font-size:12px;color:var(--text-light)">Mês atual. Histórico completo no OneDrive.</div>
         </div>
       </div>
+      <div id="hist-loading" style="display:none;text-align:center;padding:2rem;color:var(--text-light);font-size:14px">
+        <div style="font-size:28px;margin-bottom:8px">⏳</div>Carregando classificações...
+      </div>
       <div id="hist-container">
         <div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação este mês.</p></div>
       </div>
@@ -589,6 +593,10 @@ function salvarLocal() {
 async function carregarDoOneDrive() {
   if(!msToken) return;
   setSinc('pending','Carregando...');
+  // Mostra loading no histórico se estiver na tela
+  const loading = document.getElementById('hist-loading');
+  const container = document.getElementById('hist-container');
+  if(loading) { loading.style.display='block'; if(container) container.style.display='none'; }
   try {
     const h = new Date();
     const ano = h.getFullYear(), mes = MESES[h.getMonth()];
@@ -596,11 +604,14 @@ async function carregarDoOneDrive() {
     const nomeArq = `Classificacoes_${ano}.xlsx`;
     const pathArq = `${pastaRaiz}/${nomeArq}`;
     const pathArqEnc2 = pathArq.split('/').map(p => encodeURIComponent(p)).join('/');
+    console.log('[Histórico] Buscando arquivo:', pathArq);
     const checkR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathArqEnc2}`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!checkR.ok) { setSinc('ok','Conectado'); return; }
+    if(!checkR.ok) {
+      console.log('[Histórico] Arquivo não encontrado, status:', checkR.status);
+      setSinc('ok','Conectado'); return;
+    }
     const fileData = await checkR.json();
     const fileId = fileData.id;
-    // Verificar se o arquivo é um Excel válido antes de tentar abrir
     const metaR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}?select=name,size,file`,{headers:{Authorization:'Bearer '+msToken}});
     const meta = await metaR.json();
     if(!meta.file || meta.size < 1000) { setSinc('ok','Conectado'); return; }
@@ -608,7 +619,8 @@ async function carregarDoOneDrive() {
     if(!abasR.ok) { setSinc('ok','Conectado'); return; }
     const abasData = await abasR.json();
     const abas = (abasData.value||[]).map(s=>s.name);
-    if(!abas.includes(mes)) { setSinc('ok','Conectado'); return; }
+    console.log('[Histórico] Abas encontradas:', abas, '| Buscando aba:', mes);
+    if(!abas.includes(mes)) { setSinc('ok','Conectado'); toastOk('Sem classificações em ' + mes + '.'); return; }
     const rangeR = await fetch(
       `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,
       {headers:{Authorization:'Bearer '+msToken}}
@@ -616,15 +628,14 @@ async function carregarDoOneDrive() {
     if(!rangeR.ok) { setSinc('ok','Conectado'); return; }
     const rangeData = await rangeR.json();
     const rows = rangeData.values || [];
+    console.log('[Histórico] Linhas encontradas:', rows.length);
     if(rows.length <= 1) { setSinc('ok','Conectado'); return; }
     const dadosOneDrive = [];
     for(let i = 1; i < rows.length; i++) {
       const r = rows[i];
-      if(!r[3]) continue; // pula linhas sem produtor
-      // Converte data DD/MM/YYYY → YYYY-MM-DD
+      if(!r[3]) continue;
       const partes = r[0] ? String(r[0]).split('/') : [];
       const dataISO = partes.length===3 ? `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}` : '';
-      // Converte defeitos "Preto:2 | Verde:1" → { Preto:2, Verde:1 }
       const defeitosObj = {};
       if(r[14]) { String(r[14]).split('|').forEach(p => { const [k,v]=p.trim().split(':'); if(k&&v) defeitosObj[k.trim()]=parseInt(v)||0; }); }
       const tipoNorm = r[5]==='Beneficiado'?'beneficiado':r[5]==='Em Coco'?'coco':'escolha';
@@ -636,19 +647,16 @@ async function carregarDoOneDrive() {
         produtor: r[3]  || '',
         sacas:    r[4]  || '',
         tipo:     tipoNorm,
-        // Campos Beneficiado / Coco
         catacao:  r[6]  || '',
         impureza: r[7]  || '',
         umidade:  r[8]  || '',
         pen17:    r[9]  || '',
-        penfundo: r[10] || '',  // Pen. Fundo (beneficiado/coco)
+        penfundo: r[10] || '',
         renda:    r[11] || '',
         bebida:   r[12] || '',
         bebidaObs:r[13] || '',
         defeitos: defeitosObj,
-        // Campos Escolha
         aprov:    r[15] || '',
-        // r[16] = %ImpTotal (calculado — não precisa armazenar separado)
         impPau:   r[17] || '',
         impPedra: r[18] || '',
         impCasca: r[19] || '',
@@ -660,18 +668,23 @@ async function carregarDoOneDrive() {
       });
     }
     if(dadosOneDrive.length > 0) {
-      // Merge: mantém registros locais não-sincronizados + todos do OneDrive
       const chave = d => `${d.lote}|${d.produtor}|${d.data}`;
       const chavesCloud = new Set(dadosOneDrive.map(chave));
       const locaisNaoSinc = dados.filter(d => !d.sinc && !chavesCloud.has(chave(d)));
       dados = [...locaisNaoSinc, ...dadosOneDrive];
       salvarLocal();
       updateBadge();
-      renderHist();
     }
     setSinc('ok','Sincronizado');
+    toastOk(dadosOneDrive.length + ' classificações carregadas.');
   } catch(e) {
+    console.error('[Histórico] Erro:', e);
     setSinc('ok','Conectado');
+    toastErr('Erro ao carregar histórico: ' + (e.message||''));
+  } finally {
+    if(loading) loading.style.display = 'none';
+    if(container) container.style.display = 'block';
+    renderHist();
   }
 }
 
