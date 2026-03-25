@@ -281,7 +281,17 @@ body {
   </div>
 
   <!-- NOVA CLASSIFICAÇÃO -->
-  <div class="screen active" id="screen-nova">
+  <div class="screen active" id="screen-nova" style="position:relative">
+    <!-- OVERLAY DE BLOQUEIO — exibido quando desconectado -->
+    <div id="form-lock-overlay" style="position:absolute;inset:0;z-index:50;background:rgba(250,247,242,0.92);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:2rem;backdrop-filter:blur(3px)">
+      <div style="font-size:48px">🔒</div>
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--cafe)">Conexão necessária</div>
+      <div style="font-size:14px;color:var(--text-mid);max-width:320px;line-height:1.6">Para registrar classificações é necessário estar conectado ao Microsoft 365. Clique no botão abaixo para entrar.</div>
+      <button onclick="handleMSAuth()" style="background:var(--cafe);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:9px">
+        <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Conectar Microsoft
+      </button>
+    </div>
     <div class="card">
       <div class="section-title">Classificador</div>
       <div class="classificador-row">
@@ -424,7 +434,7 @@ body {
     <div id="btn-salvar-row" style="display:none;margin-top:0.5rem">
       <button class="btn-primary" onclick="salvar()">Salvar Classificação</button>
     </div>
-  </div>
+  </div><!-- fim screen-nova -->
 
   <!-- HISTÓRICO -->
   <div class="screen" id="screen-historico">
@@ -459,15 +469,17 @@ body {
       <div style="margin-top:1.5rem">
         <div class="section-title">Status</div>
         <div id="cfg-status" style="font-size:14px;color:var(--text-light);padding:6px 0">Não conectado.</div>
-        <button class="btn-secondary" style="margin-top:10px;width:100%" onclick="handleMSAuth()">Conectar / Reconectar Microsoft</button>
+        <button class="btn-secondary" style="margin-top:10px;width:100%" onclick="handleMSAuth()">
+          <span id="btn-cfg-ms-txt">Conectar / Reconectar Microsoft</span>
+        </button>
       </div>
       <div style="margin-top:1.5rem">
         <div class="section-title">Sobre o app</div>
         <div style="font-size:13px;color:var(--text-light);line-height:1.9">
-          Versão 1.0 — Classificação de Café Vilela<br>
-          Banco de dados: Excel no OneDrive<br>
+          Versão 2.0 — Classificação de Café Vilela<br>
+          Banco de dados: Excel no OneDrive (contato@cafevilela.com.br)<br>
           Abas: Janeiro, Fevereiro... (por mês)<br>
-          Arquivos: um por ano (Classificações 2025.xlsx)<br>
+          Arquivos: um por ano (Classificações 2026.xlsx)<br>
           Fotos: OneDrive › Classificação › Fotos › [Mês]<br>
           Local: apenas o mês atual no tablet
         </div>
@@ -514,8 +526,11 @@ const CLIENT_ID = 'ff4e57e2-4fc1-4b2e-8e4a-28a2df5a20c9';
 const TENANT_ID = '9a66e204-c69d-486c-97ff-40f69be9595f';
 const REDIRECT_URI = 'https://andretvilela.github.io/classificacao-cafe/';
 const MS_SCOPES = 'Files.ReadWrite.All User.Read offline_access';
+const TOKEN_KEY = 'cafe_ms_token';
+const TOKEN_EXP_KEY = 'cafe_ms_token_exp';
 
 let clf = '', tipo = '', selbBC = {}, selbE = {}, fotoBC = null, fotoE = null, itemId = null, msToken = null;
+let tokenRefreshTimer = null;
 let clientId = localStorage.getItem('cafe_client_id') || CLIENT_ID;
 let tenantId = localStorage.getItem('cafe_tenant_id') || TENANT_ID;
 let odPath = localStorage.getItem('cafe_od_path') || 'Classificação';
@@ -525,6 +540,46 @@ try {
   const h = new Date(), k = `cafe_${h.getFullYear()}_${h.getMonth()}`;
   dados = JSON.parse(localStorage.getItem(k) || '[]');
 } catch(e) { dados = []; }
+
+function salvarToken(token, expiresIn) {
+  const expAt = Date.now() + ((parseInt(expiresIn)||3600) - 120) * 1000; // 2min antes de expirar
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(TOKEN_EXP_KEY, expAt.toString());
+}
+
+function carregarTokenSalvo() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const expAt = parseInt(localStorage.getItem(TOKEN_EXP_KEY)||'0');
+  if(token && expAt > Date.now()) return token;
+  return null;
+}
+
+function agendarRefresh(expiresIn) {
+  if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+  const ms = ((parseInt(expiresIn)||3600) - 180) * 1000; // refresh 3min antes
+  tokenRefreshTimer = setTimeout(()=>{ silentRefresh(); }, Math.max(ms, 10000));
+}
+
+function silentRefresh() {
+  // Tenta refresh silencioso via iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(MS_SCOPES)}&prompt=none&response_mode=fragment`;
+  iframe.src = url;
+  iframe.onload = () => {
+    try {
+      const hash = iframe.contentWindow.location.hash;
+      const p = new URLSearchParams(hash.substring(1));
+      const t = p.get('access_token');
+      const exp = p.get('expires_in');
+      if(t) { msToken = t; salvarToken(t, exp); agendarRefresh(exp); console.log('Token renovado silenciosamente.'); }
+    } catch(e) {
+      // cross-origin block após redirect — token ainda pode ser válido
+    }
+    document.body.removeChild(iframe);
+  };
+  document.body.appendChild(iframe);
+}
 
 function salvarLocal() {
   const h = new Date(), k = `cafe_${h.getFullYear()}_${h.getMonth()}`;
@@ -565,30 +620,53 @@ async function carregarDoOneDrive() {
     const dadosOneDrive = [];
     for(let i = 1; i < rows.length; i++) {
       const r = rows[i];
-      if(!r[3]) continue;
-      const partes = r[0] ? r[0].split('/') : [];
+      if(!r[3]) continue; // pula linhas sem produtor
+      // Converte data DD/MM/YYYY → YYYY-MM-DD
+      const partes = r[0] ? String(r[0]).split('/') : [];
       const dataISO = partes.length===3 ? `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}` : '';
+      // Converte defeitos "Preto:2 | Verde:1" → { Preto:2, Verde:1 }
+      const defeitosObj = {};
+      if(r[14]) { String(r[14]).split('|').forEach(p => { const [k,v]=p.trim().split(':'); if(k&&v) defeitosObj[k.trim()]=parseInt(v)||0; }); }
+      const tipoNorm = r[5]==='Beneficiado'?'beneficiado':r[5]==='Em Coco'?'coco':'escolha';
       dadosOneDrive.push({
-        id: Date.now() + i,
+        id: Date.now() + i * 7,
         data: dataISO,
-        clf: r[1]||'', lote: r[2]||'', produtor: r[3]||'', sacas: r[4]||'',
-        tipo: r[5]==='Beneficiado'?'beneficiado':r[5]==='Em Coco'?'coco':'escolha',
-        catacao: r[6]||'', impureza: r[7]||'', umidade: r[8]||'',
-        pen17: r[9]||'', penfundo: r[10]||'', renda: r[11]||'',
-        bebida: r[12]||'', bebidaObs: r[13]||'', defeitos: {},
-        aprov: r[15]||'', impPau: r[17]||'', impPedra: r[18]||'', impCasca: r[19]||'',
-        obs: r[20]||'', fotoUrl: r[21]||'', sinc: true, fromCloud: true
+        clf:      r[1]  || '',
+        lote:     r[2]  || '',
+        produtor: r[3]  || '',
+        sacas:    r[4]  || '',
+        tipo:     tipoNorm,
+        // Campos Beneficiado / Coco
+        catacao:  r[6]  || '',
+        impureza: r[7]  || '',
+        umidade:  r[8]  || '',
+        pen17:    r[9]  || '',
+        penfundo: r[10] || '',  // Pen. Fundo (beneficiado/coco)
+        renda:    r[11] || '',
+        bebida:   r[12] || '',
+        bebidaObs:r[13] || '',
+        defeitos: defeitosObj,
+        // Campos Escolha
+        aprov:    r[15] || '',
+        // r[16] = %ImpTotal (calculado — não precisa armazenar separado)
+        impPau:   r[17] || '',
+        impPedra: r[18] || '',
+        impCasca: r[19] || '',
+        obs:      r[20] || '',
+        fotoUrl:  r[21] || '',
+        sinc: true,
+        fromCloud: true
       });
     }
     if(dadosOneDrive.length > 0) {
-      const idsLocais = new Set(dados.filter(d=>d.sinc).map(d=>d.lote+'|'+d.produtor+'|'+d.data));
-      const novos = dadosOneDrive.filter(d => !idsLocais.has(d.lote+'|'+d.produtor+'|'+d.data));
-      if(novos.length > 0) {
-        dados = [...dados.filter(d=>!d.fromCloud), ...dadosOneDrive];
-        salvarLocal();
-        updateBadge();
-        renderHist();
-      }
+      // Merge: mantém registros locais não-sincronizados + todos do OneDrive
+      const chave = d => `${d.lote}|${d.produtor}|${d.data}`;
+      const chavesCloud = new Set(dadosOneDrive.map(chave));
+      const locaisNaoSinc = dados.filter(d => !d.sinc && !chavesCloud.has(chave(d)));
+      dados = [...locaisNaoSinc, ...dadosOneDrive];
+      salvarLocal();
+      updateBadge();
+      renderHist();
     }
     setSinc('ok','Sincronizado');
   } catch(e) {
@@ -627,6 +705,7 @@ function init() {
   document.getElementById('cfg-path').value = odPath;
   buildBebidas('bc'); buildBebidas('e');
   updateBadge();
+  setFormularioBloqueado(true); // começa bloqueado até confirmar conexão
   checkToken();
 }
 
@@ -759,27 +838,58 @@ async function salvar() {
     foto: fotoE
   };
 
+  if(!msToken) {
+    toastErr('Sem conexão com Microsoft. Conecte antes de salvar.');
+    return;
+  }
+
   const reg = {...base, ...extra};
   dados.unshift(reg);
   salvarLocal();
   updateBadge();
-  toastOk('Classificação salva!');
+  toastOk('Classificação salva! Sincronizando...');
   resetForm();
-  if(msToken) await sincReg(reg);
-  else toastErr('Salvo localmente. Conecte o Microsoft para sincronizar.');
+  await sincReg(reg);
 }
 
 // ===== MICROSOFT GRAPH =====
 
-function handleMSAuth() {
-  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(MS_SCOPES)}&response_mode=fragment`;
-  window.location.href = url;
-}
-
 function checkToken() {
+  // 1. Verifica se veio token na URL (após login)
   const p = new URLSearchParams(window.location.hash.substring(1));
   const t = p.get('access_token');
-  if(t) { msToken=t; window.history.replaceState({},'',' '); onConnected(); }
+  const exp = p.get('expires_in');
+  if(t) {
+    msToken = t;
+    salvarToken(t, exp);
+    agendarRefresh(exp);
+    window.history.replaceState({},'',' ');
+    onConnected();
+    return;
+  }
+  // 2. Tenta carregar token salvo (persistência entre sessões)
+  const saved = carregarTokenSalvo();
+  if(saved) {
+    msToken = saved;
+    // Valida token com a API antes de considerar conectado
+    fetch('https://graph.microsoft.com/v1.0/me', {headers:{Authorization:'Bearer '+saved}})
+      .then(r => {
+        if(r.ok) {
+          const expAt = parseInt(localStorage.getItem(TOKEN_EXP_KEY)||'0');
+          const remainSecs = Math.max(0, (expAt - Date.now()) / 1000);
+          agendarRefresh(remainSecs);
+          onConnected();
+        } else {
+          msToken = null;
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(TOKEN_EXP_KEY);
+          setDesconectado();
+        }
+      })
+      .catch(() => { msToken = saved; onConnected(); }); // offline — aceita token salvo
+    return;
+  }
+  setDesconectado();
 }
 
 function onConnected() {
@@ -789,7 +899,40 @@ function onConnected() {
   document.getElementById('cfg-status').textContent = 'Conectado ao Microsoft 365.';
   document.getElementById('cfg-status').style.color = '#2E7D32';
   setSinc('ok','Conectado');
-  toastOk('Microsoft conectado!');
+  setFormularioBloqueado(false);
+  carregarDoOneDrive().catch(()=>{});
+}
+
+function setDesconectado() {
+  msToken = null;
+  const btn = document.getElementById('btn-ms');
+  btn.className = 'btn-ms';
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg> Conectar Microsoft`;
+  const statusEl = document.getElementById('cfg-status');
+  if(statusEl) { statusEl.textContent = 'Desconectado.'; statusEl.style.color = '#C62828'; }
+  setSinc('error','Desconectado');
+  setFormularioBloqueado(true);
+}
+
+function setFormularioBloqueado(bloqueado) {
+  const overlay = document.getElementById('form-lock-overlay');
+  if(overlay) overlay.style.display = bloqueado ? 'flex' : 'none';
+}
+
+function handleMSAuth() {
+  if(msToken) {
+    // Já conectado — pergunta se quer desconectar ou trocar conta
+    if(confirm('Deseja desconectar a conta Microsoft?\n\nAo confirmar, você precisará fazer login novamente.')) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_EXP_KEY);
+      if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+      setDesconectado();
+      toastOk('Desconectado.');
+    }
+    return;
+  }
+  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(MS_SCOPES)}&response_mode=fragment&prompt=select_account`;
+  window.location.href = url;
 }
 
 async function sincReg(reg) {
@@ -797,7 +940,14 @@ async function sincReg(reg) {
   try {
     // Testar token primeiro
     const testR = await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+msToken}});
-    if(!testR.ok) { throw new Error('Token expirado. Reconecte o Microsoft.'); }
+    if(!testR.ok) {
+      // Token expirado — limpa e pede reconexão
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_EXP_KEY);
+      msToken = null;
+      setDesconectado();
+      throw new Error('Sessão expirada. Clique em "Conectar Microsoft" para reconectar.');
+    }
     const me = await testR.json();
     console.log('Usuário:', me.userPrincipalName);
 
