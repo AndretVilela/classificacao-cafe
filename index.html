@@ -654,6 +654,7 @@ async function carregarDoOneDrive() {
         impCasca: r[19] || '',
         obs:      r[20] || '',
         fotoUrl:  r[21] || '',
+        fotoPath: r[21] || '',
         sinc: true,
         fromCloud: true
       });
@@ -986,17 +987,46 @@ async function uploadFoto(reg) {
     const err = await r.json().catch(()=>({}));
     throw new Error('Falha upload foto: ' + (err.error?.message||r.status));
   }
-  const item = await r.json();
+  // Salva o path no registro local para uso offline imediato
+  reg.fotoPath = pathFoto;
+  // Retorna o path real para salvar no Excel — legível e permanente
+  return pathFoto;
+}
+
+// Busca qualquer foto do OneDrive pelo path salvo no Excel
+// Usada pelo modal E pelo gerador de laudo — mesma lógica, uma só função
+async function buscarFotoOneDrive(path) {
+  if(!path || !msToken) return null;
   try {
-    const sr = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${item.id}/createLink`,{
-      method:'POST', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/json'},
-      body:JSON.stringify({type:'view',scope:'organization'})
+    const pathEnc = path.split('/').map(p => encodeURIComponent(p)).join('/');
+    const r = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}:/content`,
+      {headers:{Authorization:'Bearer '+msToken}}
+    );
+    if(!r.ok) return null;
+    const blob = await r.blob();
+    return await new Promise(res => {
+      const fr = new FileReader();
+      fr.onload = e => res(e.target.result);
+      fr.readAsDataURL(blob);
     });
-    const sd = await sr.json();
-    return sd.link?.webUrl || item.webUrl || item['@microsoft.graph.downloadUrl'] || '';
   } catch(e) {
-    return item.webUrl || '';
+    console.warn('Falha ao buscar foto:', path, e);
+    return null;
   }
+}
+
+// Exibe a foto no modal — usa base64 local se disponível, senão busca no OneDrive
+async function carregarFotoModal(reg) {
+  const fi = document.getElementById('modal-foto');
+  fi.style.display = 'none';
+  // 1. Base64 local — instantâneo
+  if(reg.foto) { fi.src = reg.foto; fi.style.display = 'block'; return; }
+  // 2. Path salvo localmente (registro recente neste dispositivo)
+  const path = reg.fotoPath || reg.fotoUrl || '';
+  if(!path) return;
+  const src = await buscarFotoOneDrive(path);
+  if(src) { fi.src = src; fi.style.display = 'block'; }
 }
 
 async function appendExcel(reg, fotoUrl) {
@@ -1160,7 +1190,13 @@ ${fotoHtml}
 
 async function gerarImg(c) {
   const card = document.getElementById('share-card');
-  card.innerHTML = buildCard(c);
+  // Resolve a foto: base64 local → OneDrive pelo path
+  let fotoSrc = c.foto || '';
+  if(!fotoSrc) {
+    const path = c.fotoPath || c.fotoUrl || '';
+    if(path) fotoSrc = await buscarFotoOneDrive(path) || '';
+  }
+  card.innerHTML = buildCard({...c, foto: fotoSrc});
   await new Promise(r=>setTimeout(r,400));
   const canvas = await html2canvas(card,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
   return canvas.toDataURL('image/png');
@@ -1304,18 +1340,11 @@ function verDetalhe(id) {
   if(c.obs) rows.push(['Observações',c.obs]);
   rows.push(['Status',c.sinc?'Sincronizado ✓':'Pendente sincronização']);
   document.getElementById('modal-body').innerHTML = rows.map(([k,v])=>`<div class="modal-row"><span>${k}</span><span>${v}</span></div>`).join('');
-  const fi = document.getElementById('modal-foto');
-  const srcFoto = c.foto || c.fotoUrl || '';
-  if(srcFoto) {
-    fi.src = srcFoto;
-    fi.style.display = 'block';
-    fi.onerror = () => { fi.style.display = 'none'; };
-  } else {
-    fi.style.display = 'none';
-  }
   document.getElementById('btn-sinc').style.display = (!c.sinc&&msToken)?'block':'none';
   document.getElementById('share-section').style.display = 'block';
+  document.getElementById('modal-foto').style.display = 'none'; // reseta antes de carregar
   document.getElementById('modal').classList.add('open');
+  carregarFotoModal(c); // carrega foto de forma assíncrona
 }
 
 async function sincItem() {
