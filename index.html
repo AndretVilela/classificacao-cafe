@@ -92,6 +92,11 @@ body {
 .form-group input[type="number"] { -moz-appearance: textfield; }
 .form-group input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
+.calc-item { display:flex; flex-direction:column; gap:2px; }
+.calc-item-lbl { font-size:11px; color:var(--text-light); font-weight:500; text-transform:uppercase; letter-spacing:0.5px; }
+.calc-item-val { font-size:20px; font-weight:600; color:var(--cafe); }
+.calc-item-unit { font-size:12px; color:var(--text-mid); }
+
 /* TIPO SELECTOR */
 .tipo-selector { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1.5rem; }
 .tipo-card {
@@ -306,9 +311,13 @@ body {
       <div class="section-title">Dados gerais</div>
       <div class="form-grid">
         <div class="form-group"><label>Data</label><input type="date" id="f-data"></div>
-        <div class="form-group"><label>Nº Lote / NF</label><input type="text" id="f-lote" placeholder="Ex: NF-2025-001"></div>
+        <div class="form-group"><label>Nº Lote / NF</label><input type="text" id="f-lote" placeholder="Ex: NF-2026-001"></div>
         <div class="form-group"><label>Produtor / Fazenda</label><input type="text" id="f-produtor" placeholder="Nome do produtor"></div>
-        <div class="form-group"><label>Nº de Sacas</label><input type="number" id="f-sacas" placeholder="0" min="0"></div>
+        <div class="form-group"><label>Quantidade (kg)</label><input type="number" id="f-kg" placeholder="0" min="0" step="0.01" oninput="calcVolume()"></div>
+      </div>
+      <!-- Resultado do cálculo — aparece após selecionar o tipo -->
+      <div id="calc-volume" style="display:none;margin-top:1rem;background:var(--cream-dark);border-radius:10px;padding:0.9rem 1.2rem;display:none">
+        <div style="display:flex;flex-wrap:wrap;gap:1rem" id="calc-volume-itens"></div>
       </div>
     </div>
 
@@ -346,7 +355,7 @@ body {
         <div id="campo-renda" style="display:none;margin-top:1rem">
           <div class="section-title">Rendimento</div>
           <div style="max-width:200px">
-            <div class="form-group"><label>Renda (%)</label><input type="number" id="f-renda" placeholder="0,00" step="0.01" min="0" max="100"></div>
+            <div class="form-group"><label>Renda (%)</label><input type="number" id="f-renda" placeholder="0,00" step="0.01" min="0" max="100" oninput="calcVolume()"></div>
           </div>
         </div>
         <div style="margin-top:1rem">
@@ -638,31 +647,38 @@ async function carregarDoOneDrive() {
       const dataISO = partes.length===3 ? `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}` : '';
       const defeitosObj = {};
       if(r[14]) { String(r[14]).split('|').forEach(p => { const [k,v]=p.trim().split(':'); if(k&&v) defeitosObj[k.trim()]=parseInt(v)||0; }); }
-      const tipoNorm = r[5]==='Beneficiado'?'beneficiado':r[5]==='Em Coco'?'coco':'escolha';
+      // Detecta formato novo (col E = Kg, col F = Sacas/Arrobas) vs antigo (col E = Sacas, col F = Tipo)
+      const isNovoFormato = r[6] && ['Beneficiado','Em Coco','Escolha'].includes(r[6]);
+      const tipoNorm = isNovoFormato
+        ? (r[6]==='Beneficiado'?'beneficiado':r[6]==='Em Coco'?'coco':'escolha')
+        : (r[5]==='Beneficiado'?'beneficiado':r[5]==='Em Coco'?'coco':'escolha');
       dadosOneDrive.push({
         id: Date.now() + i * 7,
         data: dataISO,
-        clf:      r[1]  || '',
-        lote:     r[2]  || '',
-        produtor: r[3]  || '',
-        sacas:    r[4]  || '',
-        tipo:     tipoNorm,
-        catacao:  r[6]  || '',
-        impureza: r[7]  || '',
-        umidade:  r[8]  || '',
-        pen17:    r[9]  || '',
-        penfundo: r[10] || '',
-        renda:    r[11] || '',
-        bebida:   r[12] || '',
-        bebidaObs:r[13] || '',
-        defeitos: defeitosObj,
-        aprov:    r[15] || '',
-        impPau:   r[17] || '',
-        impPedra: r[18] || '',
-        impCasca: r[19] || '',
-        obs:      r[20] || '',
-        fotoUrl:  r[21] || '',
-        fotoPath: r[21] || '',
+        clf:       r[1]  || '',
+        lote:      r[2]  || '',
+        produtor:  r[3]  || '',
+        kg:        isNovoFormato ? (r[4] || '') : '',
+        sacas:     isNovoFormato ? (r[5] || '') : (r[4] || ''),
+        tipo:      tipoNorm,
+        catacao:   isNovoFormato ? (r[7]  || '') : (r[6]  || ''),
+        impureza:  isNovoFormato ? (r[8]  || '') : (r[7]  || ''),
+        umidade:   isNovoFormato ? (r[9]  || '') : (r[8]  || ''),
+        pen17:     isNovoFormato ? (r[10] || '') : (r[9]  || ''),
+        penfundo:  isNovoFormato ? (r[11] || '') : (r[10] || ''),
+        renda:     isNovoFormato ? (r[12] || '') : (r[11] || ''),
+        bebida:    isNovoFormato ? (r[13] || '') : (r[12] || ''),
+        bebidaObs: isNovoFormato ? (r[14] || '') : (r[13] || ''),
+        defeitos:  defeitosObj,
+        aprov:     isNovoFormato ? (r[16] || '') : (r[15] || ''),
+        impPau:    isNovoFormato ? (r[18] || '') : (r[17] || ''),
+        impPedra:  isNovoFormato ? (r[19] || '') : (r[18] || ''),
+        impCasca:  isNovoFormato ? (r[20] || '') : (r[19] || ''),
+        obs:       isNovoFormato ? (r[21] || '') : (r[20] || ''),
+        fotoUrl:   isNovoFormato ? (r[22] || '') : (r[21] || ''),
+        fotoPath:  isNovoFormato ? (r[22] || '') : (r[21] || ''),
+        arrobas:   isNovoFormato ? (r[23] || '') : '',
+        prevSacas: isNovoFormato ? (r[24] || '') : '',
         sinc: true,
         fromCloud: true
       });
@@ -777,7 +793,48 @@ function selectTipo(t) {
   document.getElementById('form-e').style.display = t==='escolha' ? 'block' : 'none';
   document.getElementById('campo-renda').style.display = t==='coco' ? 'block' : 'none';
   document.getElementById('btn-salvar-row').style.display = 'block';
+  calcVolume();
   setTimeout(()=>document.getElementById('btn-salvar-row').scrollIntoView({behavior:'smooth',block:'end'}),200);
+}
+
+function calcVolume() {
+  const kg = parseFloat(document.getElementById('f-kg')?.value) || 0;
+  const box = document.getElementById('calc-volume');
+  const itens = document.getElementById('calc-volume-itens');
+  if(!tipo || kg <= 0) { if(box) box.style.display='none'; return; }
+  if(box) box.style.display='block';
+  let html = '';
+  if(tipo === 'beneficiado' || tipo === 'escolha') {
+    const sacas = (kg / 60).toFixed(2);
+    html = `<div class="calc-item">
+      <span class="calc-item-lbl">Sacas (60kg)</span>
+      <span class="calc-item-val">${sacas}</span>
+      <span class="calc-item-unit">sacas</span>
+    </div>`;
+  } else if(tipo === 'coco') {
+    const arrobas = (kg / 30).toFixed(2);
+    const renda = parseFloat(document.getElementById('f-renda')?.value) || 0;
+    const prevSacas = renda > 0 ? ((kg * renda / 100) / 60).toFixed(2) : null;
+    html = `<div class="calc-item">
+      <span class="calc-item-lbl">Arrobas (30kg)</span>
+      <span class="calc-item-val">${arrobas}</span>
+      <span class="calc-item-unit">arrobas</span>
+    </div>`;
+    if(prevSacas) {
+      html += `<div class="calc-item" style="border-left:2px solid var(--cafe-light);padding-left:1rem">
+        <span class="calc-item-lbl">Previsão sacas beneficiado</span>
+        <span class="calc-item-val">${prevSacas}</span>
+        <span class="calc-item-unit">sacas de 60kg · renda ${renda}%</span>
+      </div>`;
+    } else {
+      html += `<div class="calc-item" style="border-left:2px solid var(--border-mid);padding-left:1rem;opacity:0.6">
+        <span class="calc-item-lbl">Previsão sacas beneficiado</span>
+        <span class="calc-item-val">—</span>
+        <span class="calc-item-unit">informe a renda para calcular</span>
+      </div>`;
+    }
+  }
+  if(itens) itens.innerHTML = html;
 }
 
 function previewFoto(ev, prevId, iconId, hintId) {
@@ -819,12 +876,21 @@ async function salvar() {
   if(!tipo) { alert('Selecione o tipo de café.'); return; }
   if(!document.getElementById('f-produtor').value) { alert('Informe o produtor/fazenda.'); return; }
 
+  const kg = parseFloat(document.getElementById('f-kg').value) || 0;
+  const sacasCalc = tipo !== 'coco' ? (kg / 60) : 0;
+  const arrobasCalc = tipo === 'coco' ? (kg / 30) : 0;
+  const rendaVal = parseFloat(document.getElementById('f-renda')?.value) || 0;
+  const prevSacasCalc = tipo === 'coco' && rendaVal > 0 ? ((kg * rendaVal / 100) / 60) : 0;
+
   const base = {
     id: Date.now(),
     data: document.getElementById('f-data').value,
     lote: document.getElementById('f-lote').value,
     produtor: document.getElementById('f-produtor').value,
-    sacas: document.getElementById('f-sacas').value,
+    kg: kg,
+    sacas: tipo !== 'coco' ? sacasCalc.toFixed(2) : arrobasCalc.toFixed(2),
+    arrobas: arrobasCalc > 0 ? arrobasCalc.toFixed(2) : '',
+    prevSacas: prevSacasCalc > 0 ? prevSacasCalc.toFixed(2) : '',
     tipo, clf, sinc: false
   };
 
@@ -1067,11 +1133,12 @@ async function appendExcel(reg, fotoUrl) {
     (parseFloat(reg.impPau)||0) + (parseFloat(reg.impPedra)||0) + (parseFloat(reg.impCasca)||0)
   ).toFixed(2) : '';
   const linha = [
-    df, reg.clf||'', reg.lote||'', reg.produtor||'', reg.sacas||'', tl,
+    df, reg.clf||'', reg.lote||'', reg.produtor||'', reg.kg||'', reg.sacas||'', tl,
     reg.catacao||'', reg.impureza||'', reg.umidade||'', reg.pen17||'', reg.penfundo||'',
     reg.renda||'', reg.bebida||'', reg.bebidaObs||'', def,
     reg.aprov||'', impTotal||'', reg.impPau||'', reg.impPedra||'', reg.impCasca||'',
-    reg.obs||'', fotoUrl
+    reg.obs||'', fotoUrl,
+    reg.arrobas||'', reg.prevSacas||''
   ];
   const apiHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
   await new Promise(r=>setTimeout(r,1000));
@@ -1087,7 +1154,7 @@ async function appendExcel(reg, fotoUrl) {
   const nextRow = (usedData.rowCount||1) + 1;
   console.log('Inserindo linha na linha:', nextRow);
   const writeResp = await fetch(
-    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:V${nextRow}')`,
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:Y${nextRow}')`,
     {method:'PATCH', headers:apiHdrs, body:JSON.stringify({values:[linha]})}
   );
   if(!writeResp.ok) {
@@ -1147,7 +1214,7 @@ async function garantirAba(fileId, mes) {
     }
     await new Promise(r=>setTimeout(r,3000));
   }
-  const cabHdrs = [['Data','Classificador','Lote/NF','Produtor','Sacas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto']];
+  const cabHdrs = [['Data','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.']];
   await new Promise(r=>setTimeout(r,1000));
   const checkHdr = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
@@ -1157,7 +1224,7 @@ async function garantirAba(fileId, mes) {
   if(!hdrData.values?.[0]?.[0]) {
     console.log('Inserindo cabeçalhos na aba:', mes);
     const hdrResp = await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:V1')`,
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:Y1')`,
       {method:'PATCH', headers:baseHdrs, body:JSON.stringify({values:cabHdrs})}
     );
     if(!hdrResp.ok) console.warn('Cabeçalho falhou:', hdrResp.status);
@@ -1202,7 +1269,7 @@ function buildCard(c) {
 ${fotoHtml}
 <div class="sc-body">
   <div class="sc-produtor">${c.produtor||'—'}</div>
-  <div class="sc-meta">Lote: ${c.lote||'—'} · ${c.sacas||'—'} sacas</div>
+  <div class="sc-meta">Lote: ${c.lote||'—'} · ${c.kg ? c.kg+' kg · ' : ''}${c.tipo==='coco' ? (c.sacas||'—')+' @' : (c.sacas||'—')+' sc'}</div>
   <span class="sc-tipo" style="${tc}">${tl}</span>
   ${bebHtml}
   <div class="sc-grid">${grid}</div>
@@ -1235,7 +1302,10 @@ function textoLaudo(c) {
     `*Data:* ${df}`,
     `*Classificador:* ${c.clf||'—'}`,
     `*Tipo:* ${tl}`,
-    `*Sacas:* ${c.sacas||'—'} sacas`,
+    c.kg ? `*Quantidade:* ${c.kg} kg` : '',
+    c.tipo==='coco'
+      ? `*Arrobas:* ${c.sacas||'—'} @${c.prevSacas?' · Prev. sacas benef.: '+c.prevSacas+' sc':''}`
+      : `*Sacas:* ${c.sacas||'—'} sc`,
     `*Lote/NF:* ${c.lote||'—'}`,
   ];
   if(c.tipo !== 'escolha') {
@@ -1261,7 +1331,7 @@ function textoLaudo(c) {
   if(c.bebida) linhas.push(`*Bebida:* ${c.bebida}${c.bebidaObs?' ('+c.bebidaObs+')':''}`);
   if(c.obs)    linhas.push(`*Observações:* ${c.obs}`);
   linhas.push('', '_Café Vilela · Classificação_');
-  return linhas.join('\n');
+  return linhas.filter(l => l !== '').join('\n').replace(/\n{3,}/g,'\n\n');
 }
 
 async function shareWA() {
@@ -1325,7 +1395,7 @@ function renderHist() {
     return `<div class="hist-item" onclick="verDetalhe(${r.id})">
       <div class="hi-data">${df}</div>
       <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
-      <div class="hi-sacas">${r.sacas?r.sacas+' sc':'—'}</div>
+      <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="tag ${tc}">${tl}</span>
         <span style="font-size:10px">${r.sinc?'🟢':'🟡'}</span>
@@ -1340,7 +1410,15 @@ function verDetalhe(id) {
   const tl = c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
   const df = c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
   document.getElementById('modal-title').textContent = c.produtor||'Classificação';
-  let rows=[['Data',df],['Classificador',c.clf||'—'],['Lote/NF',c.lote||'—'],['Sacas',c.sacas||'—'],['Tipo',tl]];
+  let rows=[['Data',df],['Classificador',c.clf||'—'],['Lote/NF',c.lote||'—']];
+  if(c.kg) rows.push(['Quantidade',c.kg+' kg']);
+  if(c.tipo==='coco') {
+    if(c.sacas) rows.push(['Arrobas',c.sacas+' @']);
+    if(c.prevSacas) rows.push(['Prev. Sacas Benef.',c.prevSacas+' sc']);
+  } else {
+    if(c.sacas) rows.push(['Sacas',c.sacas+' sc']);
+  }
+  rows.push(['Tipo',tl]);
   if(c.tipo!=='escolha'){
     if(c.catacao) rows.push(['% Catação',c.catacao+'%']);
     if(c.impureza) rows.push(['% Impureza',c.impureza+'%']);
@@ -1403,7 +1481,8 @@ function resetForm() {
   document.getElementById('form-bc').style.display='none';
   document.getElementById('form-e').style.display='none';
   document.getElementById('btn-salvar-row').style.display='none';
-  ['f-lote','f-produtor','f-sacas','f-catacao','f-impureza','f-umidade','f-pen17','f-penfundo','f-renda','f-bobs-bc','f-obs-bc','f-aprov','f-penfundo-e','f-imp-pau','f-imp-pedra','f-imp-casca','f-bobs-e','f-obs-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const cv = document.getElementById('calc-volume'); if(cv) cv.style.display='none';
+  ['f-lote','f-produtor','f-kg','f-catacao','f-impureza','f-umidade','f-pen17','f-penfundo','f-renda','f-bobs-bc','f-obs-bc','f-aprov','f-penfundo-e','f-imp-pau','f-imp-pedra','f-imp-casca','f-bobs-e','f-obs-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.querySelectorAll('.defeito-item input').forEach(i=>i.value='');
   buildBebidas('bc'); buildBebidas('e');
   document.getElementById('xic-bc').innerHTML='';
