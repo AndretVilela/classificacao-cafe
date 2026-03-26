@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Café Vilela — Sistemas</title>
+<title>Classificação de Café — Vilela</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -22,43 +22,22 @@
   --border-mid: rgba(60,42,30,0.22);
   --radius: 14px;
   --shadow: 0 2px 16px rgba(60,42,30,0.08);
-  --green: #2E7D32;
-  --red: #C62828;
-  --blue: #1565C0;
 }
-body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height: 100vh; color: var(--text); overscroll-behavior-y: contain; }
-
-/* ===== PORTAL ===== */
-#portal {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 100vh; padding: 1.5rem;
-  background: var(--cafe);
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  min-height: 100vh;
+  color: var(--text);
+  overscroll-behavior-y: contain; /* bloqueia pull-to-refresh no mobile */
 }
-.portal-inner { width: 100%; max-width: 520px; text-align: center; }
-.portal-logo { margin-bottom: 2.5rem; }
-.portal-logo svg { width: 64px; height: 64px; margin-bottom: 1rem; }
-.portal-logo h1 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 600; color: #fff; }
-.portal-logo p { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 4px; font-weight: 300; letter-spacing: 0.3px; }
-.portal-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.portal-card {
-  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 16px; padding: 1.75rem 1.25rem; cursor: pointer;
-  transition: all 0.2s; text-align: center;
-}
-.portal-card:hover { background: rgba(255,255,255,0.13); border-color: var(--gold); transform: translateY(-2px); }
-.portal-card-icon { font-size: 36px; margin-bottom: 0.75rem; }
-.portal-card-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 600; color: #fff; margin-bottom: 5px; }
-.portal-card-desc { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.5; }
-.portal-footer { margin-top: 2rem; font-size: 11px; color: rgba(255,255,255,0.25); }
-
-/* ===== APP (classificação + fretes) ===== */
-#app-classificacao, #app-fretes { display: none; }
 .app { max-width: 860px; margin: 0 auto; padding: 1.25rem; }
 
 /* HEADER */
 .header {
-  background: var(--cafe); border-radius: var(--radius);
-  padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
+  background: var(--cafe);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
 }
 .header-brand h1 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
@@ -69,70 +48,154 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
 .nav-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
 .nav-btn.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 500; }
 .badge { background: var(--gold); color: var(--cafe); border-radius: 20px; font-size: 10px; padding: 1px 6px; margin-left: 4px; font-weight: 500; }
-.btn-voltar { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); border-radius: 8px; padding: 7px 12px; font-size: 12px; font-family: 'DM Sans',sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
-.btn-voltar:hover { background: rgba(255,255,255,0.15); color: #fff; }
 
 /* BOTÃO MICROSOFT */
 .btn-ms { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.85); border-radius: 8px; padding: 7px 12px; font-size: 12px; font-family: 'DM Sans',sans-serif; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: all 0.15s; white-space: nowrap; }
 .btn-ms:hover { background: rgba(255,255,255,0.18); }
 .btn-ms.connected { background: rgba(76,175,80,0.2); border-color: rgba(76,175,80,0.4); color: #A5D6A7; }
 .sync-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.sync-dot.ok { background: #4CAF50; } .sync-dot.pending { background: #FFA726; } .sync-dot.error { background: #EF5350; }
+.sync-dot.ok { background: #4CAF50; }
+.sync-dot.pending { background: #FFA726; }
+.sync-dot.error { background: #EF5350; }
 
 /* SCREENS */
-.screen { display: none; } .screen.active { display: block; }
+.screen { display: none; }
+.screen.active { display: block; }
 
 /* CARDS */
-.card { background: #fff; border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin-bottom: 1rem; box-shadow: var(--shadow); }
-.section-title { font-size: 11px; font-weight: 500; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1rem; }
+.card {
+  background: #fff;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+.section-title {
+  font-size: 11px; font-weight: 500; color: var(--text-light);
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1rem;
+}
 
 /* FORM */
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group label { font-size: 12px; color: var(--text-mid); font-weight: 500; }
-.form-group input, .form-group textarea, .form-group select {
-  border: 0.5px solid var(--border-mid); border-radius: 9px; padding: 10px 13px; font-size: 15px;
-  background: var(--cream); color: var(--text); font-family: 'DM Sans', sans-serif;
+.form-group input, .form-group textarea {
+  border: 0.5px solid var(--border-mid);
+  border-radius: 9px; padding: 10px 13px; font-size: 15px;
+  background: var(--cream); color: var(--text);
+  font-family: 'DM Sans', sans-serif;
   outline: none; transition: border-color 0.15s; width: 100%;
 }
-.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--cafe-mid); background: #fff; box-shadow: 0 0 0 3px rgba(107,66,38,0.08); }
+.form-group input:focus, .form-group textarea:focus { border-color: var(--cafe-mid); background: #fff; box-shadow: 0 0 0 3px rgba(107,66,38,0.08); }
 .form-group textarea { resize: vertical; min-height: 80px; }
 .form-group input[type="number"] { -moz-appearance: textfield; }
 .form-group input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
-.form-group select { cursor: pointer; }
+
+.calc-item { display:flex; flex-direction:column; gap:2px; }
+.calc-item-lbl { font-size:11px; color:var(--text-light); font-weight:500; text-transform:uppercase; letter-spacing:0.5px; }
+.calc-item-val { font-size:20px; font-weight:600; color:var(--cafe); }
+.calc-item-unit { font-size:12px; color:var(--text-mid); }
+
+/* TIPO SELECTOR */
+.tipo-selector { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1.5rem; }
+.tipo-card {
+  background: var(--cream); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 1.1rem 0.75rem; cursor: pointer;
+  text-align: center; transition: all 0.15s;
+}
+.tipo-card:hover { border-color: var(--cafe-light); background: #FDF6EF; }
+.tipo-card.selected { border-color: var(--cafe-mid); background: #FDF6EF; box-shadow: 0 0 0 3px rgba(107,66,38,0.1); }
+.tipo-icon { font-size: 26px; margin-bottom: 5px; }
+.tipo-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.tipo-desc { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+
+/* CLASSIFICADOR */
+.classificador-row { display: flex; gap: 12px; margin-bottom: 1.5rem; }
+.clf-btn {
+  flex: 1; border: 1.5px solid var(--border);
+  background: var(--cream); border-radius: 12px;
+  padding: 1rem; text-align: center; cursor: pointer; transition: all 0.15s;
+}
+.clf-btn:hover { border-color: var(--cafe-light); }
+.clf-btn.selected { border-color: var(--cafe-mid); background: #FDF6EF; box-shadow: 0 0 0 3px rgba(107,66,38,0.1); }
+.clf-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--cream-dark); color: var(--cafe-mid); font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; margin: 0 auto 7px; border: 1.5px solid var(--border-mid); }
+.clf-btn.selected .clf-avatar { background: var(--cafe-mid); color: #fff; border-color: var(--cafe-mid); }
+.clf-name { font-size: 14px; font-weight: 500; color: var(--text); }
+
+/* BEBIDA */
+.bebida-toggles { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
+.bebida-toggle {
+  border: 1.5px solid var(--border-mid); background: var(--cream);
+  border-radius: 8px; padding: 8px 13px; font-size: 13px;
+  font-family: 'DM Sans',sans-serif; cursor: pointer;
+  transition: all 0.15s; color: var(--text);
+}
+.bebida-toggle:hover { border-color: var(--cafe-light); }
+.bebida-toggle.selected { background: #FDF6EF; border-color: var(--cafe-mid); color: var(--cafe); font-weight: 500; }
+.xicara-rows { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+.xicara-row { display: flex; align-items: center; gap: 10px; background: var(--cream); border-radius: 8px; padding: 8px 12px; }
+.xicara-label { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+.xicara-row input { width: 64px; border: 0.5px solid var(--border-mid); border-radius: 6px; padding: 6px 8px; font-size: 14px; text-align: center; background: #fff; color: var(--text); font-family: 'DM Sans',sans-serif; }
+.xicara-unit { font-size: 12px; color: var(--text-light); }
+
+/* DEFEITOS */
+.defeitos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 8px; }
+.defeito-item { background: var(--cream); border-radius: 8px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
+.defeito-item label { font-size: 13px; color: var(--text-mid); flex: 1; }
+.defeito-item input { width: 66px; border: 0.5px solid var(--border-mid); border-radius: 6px; padding: 6px 8px; font-size: 14px; text-align: center; background: #fff; color: var(--text); font-family: 'DM Sans',sans-serif; }
+
+/* PENEIRAS / IMPUREZA */
+.peneiras-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.impureza-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+
+/* FOTO */
+.photo-wrap { border: 1.5px dashed var(--border-mid); border-radius: 10px; padding: 1.5rem; text-align: center; cursor: pointer; transition: background 0.15s; position: relative; overflow: hidden; }
+.photo-wrap:hover { background: var(--cream-dark); }
+.photo-icon-lbl { font-size: 30px; }
+.photo-hint { font-size: 13px; color: var(--text-light); margin-top: 6px; }
+.photo-preview { width: 100%; max-height: 190px; object-fit: cover; border-radius: 8px; display: none; }
 
 /* BOTÕES */
-.btn-primary { background: var(--cafe); color: #fff; border: none; border-radius: 10px; padding: 13px 24px; font-size: 15px; font-family: 'DM Sans',sans-serif; font-weight: 500; cursor: pointer; transition: background 0.15s; width: 100%; }
+.btn-primary {
+  background: var(--cafe); color: #fff; border: none;
+  border-radius: 10px; padding: 13px 24px; font-size: 15px;
+  font-family: 'DM Sans',sans-serif; font-weight: 500;
+  cursor: pointer; transition: background 0.15s; width: 100%;
+}
 .btn-primary:hover { background: var(--cafe-mid); }
 .btn-primary:disabled { background: var(--text-light); cursor: not-allowed; }
-.btn-secondary { background: var(--cream-dark); color: var(--text); border: 0.5px solid var(--border-mid); border-radius: 10px; padding: 13px 24px; font-size: 15px; font-family: 'DM Sans',sans-serif; cursor: pointer; transition: all 0.15s; }
+.btn-secondary {
+  background: var(--cream-dark); color: var(--text);
+  border: 0.5px solid var(--border-mid); border-radius: 10px;
+  padding: 13px 24px; font-size: 15px; font-family: 'DM Sans',sans-serif;
+  cursor: pointer; transition: all 0.15s;
+}
 .btn-secondary:hover { background: var(--cream); }
-.btn-small { padding: 8px 14px; font-size: 13px; border-radius: 8px; border: none; font-family: 'DM Sans',sans-serif; cursor: pointer; transition: all 0.15s; }
-.btn-green { background: #4CAF50; color: #fff; }
-.btn-green:hover { background: #388E3C; }
-.btn-orange { background: #E65100; color: #fff; }
-.btn-orange:hover { background: #BF360C; }
-.btn-blue-map { background: #1A73E8; color: #fff; display: inline-flex; align-items: center; gap: 5px; }
-.btn-blue-map:hover { background: #1557B0; }
 
 /* HISTÓRICO */
 .hist-list { display: flex; flex-direction: column; gap: 8px; }
 .hist-item {
-  background: #fff; border: 0.5px solid var(--border); border-radius: 12px; padding: 0.9rem 1.2rem;
-  display: grid; align-items: center; gap: 10px; cursor: pointer; transition: background 0.15s; box-shadow: var(--shadow);
+  background: #fff; border: 0.5px solid var(--border);
+  border-radius: 12px; padding: 0.9rem 1.2rem;
+  display: grid; grid-template-columns: 74px 1fr auto auto;
+  align-items: center; gap: 10px; cursor: pointer;
+  transition: background 0.15s; box-shadow: var(--shadow);
 }
 .hist-item:hover { background: var(--cream); }
 .hi-data { font-size: 12px; font-weight: 500; color: var(--text-light); }
 .hi-produtor { font-size: 15px; font-weight: 500; color: var(--text); }
 .hi-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+.hi-sacas { font-size: 13px; font-weight: 500; color: var(--text-mid); white-space: nowrap; }
 .tag { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-.tag-b { background: #EEF0FB; color: #3C3489; } .tag-c { background: #EAF3DE; color: #3B6D11; } .tag-e { background: #FDF3E3; color: #7A4F00; }
-.tag-ag { background: #E3F2FD; color: #1565C0; } .tag-er { background: #E8F5E9; color: #2E7D32; } .tag-co { background: #EDE7F6; color: #4527A0; } .tag-ca { background: #FFEBEE; color: #C62828; }
+.tag-b { background: #EEF0FB; color: #3C3489; }
+.tag-c { background: #EAF3DE; color: #3B6D11; }
+.tag-e { background: #FDF3E3; color: #7A4F00; }
 
 /* MODAL */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,18,9,0.5); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
 .modal-overlay.open { display: flex; }
-.modal { background: #fff; border-radius: 18px; padding: 1.5rem; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(26,18,9,0.2); }
+.modal { background: #fff; border-radius: 18px; padding: 1.5rem; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(26,18,9,0.2); }
 .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
 .modal-header h2 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; color: var(--text); }
 .modal-close-x { background: var(--cream-dark); border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; color: var(--text-mid); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -140,8 +203,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
 .modal-row:last-child { border-bottom: none; }
 .modal-row span:first-child { color: var(--text-light); flex-shrink: 0; margin-right: 12px; }
 .modal-row span:last-child { font-weight: 500; text-align: right; color: var(--text); }
+.modal-foto { width: 100%; border-radius: 10px; margin-top: 12px; }
 .modal-actions { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
 .modal-actions button { flex: 1; min-width: 80px; }
+
+/* SHARE BUTTONS */
+.share-section { margin-top: 10px; }
+.share-label { font-size: 11px; font-weight: 500; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+.share-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.share-btn { flex: 1; min-width: 80px; border: none; border-radius: 9px; padding: 11px 10px; font-size: 13px; font-family: 'DM Sans',sans-serif; font-weight: 500; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.share-wa { background: #25D366; color: #fff; }
+.share-wa:hover { background: #1da851; }
+.share-email { background: #0078D4; color: #fff; }
+.share-email:hover { background: #005fa3; }
+.share-pdf { background: #D83B01; color: #fff; }
+.share-pdf:hover { background: #b03000; }
 
 /* CONFIG */
 .cfg-box { background: #FDF6EF; border: 1px solid rgba(107,66,38,0.18); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
@@ -158,53 +234,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
 .empty-icon { font-size: 44px; margin-bottom: 10px; }
 
 /* TOASTS */
-.toast { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 12px 18px; border-radius: 10px; font-size: 14px; font-weight: 500; font-family: 'DM Sans',sans-serif; z-index: 300; opacity: 0; transform: translateY(8px); transition: all 0.3s; pointer-events: none; max-width: 300px; line-height: 1.4; }
-.toast.ok { background: #2E7D32; color: #fff; } .toast.err { background: #C62828; color: #fff; }
+.toast { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 12px 18px; border-radius: 10px; font-size: 14px; font-weight: 500; font-family: 'DM Sans',sans-serif; z-index: 300; opacity: 0; transform: translateY(8px); transition: all 0.3s; pointer-events: none; max-width: 280px; }
+.toast.ok { background: #2E7D32; color: #fff; }
+.toast.err { background: #C62828; color: #fff; }
 .toast.show { opacity: 1; transform: translateY(0); }
 
-/* ===== CLASSIFICAÇÃO — estilos específicos ===== */
-.calc-item { display:flex; flex-direction:column; gap:2px; }
-.calc-item-lbl { font-size:11px; color:var(--text-light); font-weight:500; text-transform:uppercase; letter-spacing:0.5px; }
-.calc-item-val { font-size:20px; font-weight:600; color:var(--cafe); }
-.calc-item-unit { font-size:12px; color:var(--text-mid); }
-.tipo-selector { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1.5rem; }
-.tipo-card { background: var(--cream); border: 1.5px solid var(--border); border-radius: 12px; padding: 1.1rem 0.75rem; cursor: pointer; text-align: center; transition: all 0.15s; }
-.tipo-card:hover { border-color: var(--cafe-light); background: #FDF6EF; }
-.tipo-card.selected { border-color: var(--cafe-mid); background: #FDF6EF; box-shadow: 0 0 0 3px rgba(107,66,38,0.1); }
-.tipo-icon { font-size: 26px; margin-bottom: 5px; } .tipo-name { font-size: 14px; font-weight: 500; color: var(--text); } .tipo-desc { font-size: 11px; color: var(--text-light); margin-top: 2px; }
-.classificador-row { display: flex; gap: 12px; margin-bottom: 1.5rem; }
-.clf-btn { flex: 1; border: 1.5px solid var(--border); background: var(--cream); border-radius: 12px; padding: 1rem; text-align: center; cursor: pointer; transition: all 0.15s; }
-.clf-btn:hover { border-color: var(--cafe-light); }
-.clf-btn.selected { border-color: var(--cafe-mid); background: #FDF6EF; box-shadow: 0 0 0 3px rgba(107,66,38,0.1); }
-.clf-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--cream-dark); color: var(--cafe-mid); font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; margin: 0 auto 7px; border: 1.5px solid var(--border-mid); }
-.clf-btn.selected .clf-avatar { background: var(--cafe-mid); color: #fff; border-color: var(--cafe-mid); }
-.clf-name { font-size: 14px; font-weight: 500; color: var(--text); }
-.bebida-toggles { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
-.bebida-toggle { border: 1.5px solid var(--border-mid); background: var(--cream); border-radius: 8px; padding: 8px 13px; font-size: 13px; font-family: 'DM Sans',sans-serif; cursor: pointer; transition: all 0.15s; color: var(--text); }
-.bebida-toggle:hover { border-color: var(--cafe-light); }
-.bebida-toggle.selected { background: #FDF6EF; border-color: var(--cafe-mid); color: var(--cafe); font-weight: 500; }
-.xicara-rows { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
-.xicara-row { display: flex; align-items: center; gap: 10px; background: var(--cream); border-radius: 8px; padding: 8px 12px; }
-.xicara-label { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
-.xicara-row input { width: 64px; border: 0.5px solid var(--border-mid); border-radius: 6px; padding: 6px 8px; font-size: 14px; text-align: center; background: #fff; color: var(--text); font-family: 'DM Sans',sans-serif; }
-.xicara-unit { font-size: 12px; color: var(--text-light); }
-.defeitos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 8px; }
-.defeito-item { background: var(--cream); border-radius: 8px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
-.defeito-item label { font-size: 13px; color: var(--text-mid); flex: 1; }
-.defeito-item input { width: 66px; border: 0.5px solid var(--border-mid); border-radius: 6px; padding: 6px 8px; font-size: 14px; text-align: center; background: #fff; color: var(--text); font-family: 'DM Sans',sans-serif; }
-.peneiras-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.impureza-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
-.photo-wrap { border: 1.5px dashed var(--border-mid); border-radius: 10px; padding: 1.5rem; text-align: center; cursor: pointer; transition: background 0.15s; position: relative; overflow: hidden; }
-.photo-wrap:hover { background: var(--cream-dark); }
-.photo-icon-lbl { font-size: 30px; } .photo-hint { font-size: 13px; color: var(--text-light); margin-top: 6px; }
-.photo-preview { width: 100%; max-height: 190px; object-fit: cover; border-radius: 8px; display: none; }
-.share-section { margin-top: 10px; }
-.share-label { font-size: 11px; font-weight: 500; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
-.share-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.share-btn { flex: 1; min-width: 80px; border: none; border-radius: 9px; padding: 11px 10px; font-size: 13px; font-family: 'DM Sans',sans-serif; font-weight: 500; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
-.share-wa { background: #25D366; color: #fff; } .share-wa:hover { background: #1da851; }
-.share-email { background: #0078D4; color: #fff; } .share-email:hover { background: #005fa3; }
-.share-pdf { background: #D83B01; color: #fff; } .share-pdf:hover { background: #b03000; }
+/* SHARE CARD (oculto) */
 #share-card { position: fixed; left: -9999px; top: 0; width: 460px; background: #fff; font-family: 'DM Sans', sans-serif; }
 .sc-head { background: var(--cafe); padding: 20px 22px; display: flex; align-items: center; gap: 12px; }
 .sc-head-icon { width: 38px; height: 38px; background: rgba(255,255,255,0.15); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
@@ -225,91 +260,40 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
 .sc-item-val { font-size: 13px; font-weight: 500; color: var(--text); margin-top: 1px; }
 .sc-obs { background: #FFFBF0; border-left: 3px solid var(--gold); border-radius: 0 7px 7px 0; padding: 8px 11px; font-size: 12px; color: #7A5C00; margin-bottom: 12px; }
 .sc-foot { background: var(--cream); padding: 11px 22px; font-size: 10px; color: var(--text-light); text-align: center; letter-spacing: 0.3px; }
-
-/* ===== FRETES — estilos específicos ===== */
-.hist-item-frete { grid-template-columns: 74px 1fr auto auto; }
-.hist-item-prop { grid-template-columns: 1fr auto; }
-.status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-.pill-ag { background: #E3F2FD; color: #1565C0; }
-.pill-er { background: #E8F5E9; color: #2E7D32; }
-.pill-co { background: #EDE7F6; color: #4527A0; }
-.pill-ca { background: #FFEBEE; color: #C62828; }
-.gps-box { background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 8px; padding: 10px 13px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.gps-box-semgps { background: #FFF3E0; border-color: #FFCC80; }
-.gps-coords { font-size: 12px; color: #2E7D32; font-family: monospace; }
-.capacidade-bar { background: var(--cream-dark); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 4px; }
-.capacidade-fill { height: 100%; border-radius: 4px; background: #4CAF50; transition: width 0.4s; }
-.capacidade-fill.medio { background: var(--gold); }
-.capacidade-fill.alto { background: var(--red); }
-.veiculo-placa { font-family: monospace; font-size: 13px; font-weight: 600; background: var(--cream-dark); padding: 3px 8px; border-radius: 5px; color: var(--cafe); }
 </style>
 </head>
 <body>
-
-<!-- ====== PORTAL DE SELEÇÃO ====== -->
-<div id="portal">
-  <div class="portal-inner">
-    <div class="portal-logo">
-      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="32" cy="32" r="30" stroke="#C9A84C" stroke-width="1.5" fill="none" opacity="0.4"/>
-        <circle cx="32" cy="32" r="22" stroke="#C9A84C" stroke-width="1" fill="none" opacity="0.25"/>
-        <path d="M20 38 Q24 28 32 26 Q40 24 44 36" stroke="#C9A84C" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M22 42 Q28 32 32 30 Q38 28 42 38" stroke="#C9A84C" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
-        <ellipse cx="32" cy="44" rx="12" ry="4" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
-        <path d="M32 18 Q33 14 36 13 Q35 17 38 16" stroke="#C9A84C" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      </svg>
-      <h1>Café Vilela</h1>
-      <p>Sistemas de gestão · Capitólio — MG</p>
-    </div>
-    <div class="portal-cards">
-      <div class="portal-card" onclick="abrirApp('classificacao')">
-        <div class="portal-card-icon">☕</div>
-        <div class="portal-card-title">Classificação</div>
-        <div class="portal-card-desc">Laudos técnicos, análise de defeitos e bebida</div>
-      </div>
-      <div class="portal-card" onclick="abrirApp('fretes')">
-        <div class="portal-card-icon">🚛</div>
-        <div class="portal-card-title">Fretes</div>
-        <div class="portal-card-desc">Gestão de fretes, propriedades e rotas GPS</div>
-      </div>
-    </div>
-    <div class="portal-footer">Comércio e Armazém de Café Verde · contato@cafevilela.com.br</div>
-  </div>
-</div>
-
-<!-- ====== APP CLASSIFICAÇÃO ====== -->
-<div id="app-classificacao">
 <div class="app">
   <div class="header">
     <div class="header-brand">
       <h1>Classificação de Café</h1>
-      <p id="clf-header-date"></p>
+      <p id="header-date"></p>
     </div>
     <div class="header-right">
-      <button class="btn-voltar" onclick="voltarPortal()">← Portal</button>
-      <div id="clf-sync-wrap" style="display:none;align-items:center;gap:6px">
-        <div class="sync-dot pending" id="clf-sync-dot"></div>
-        <span id="clf-sync-txt" style="font-size:12px;color:rgba(255,255,255,0.7)"></span>
+      <div id="sync-wrap" style="display:none;align-items:center;gap:6px">
+        <div class="sync-dot pending" id="sync-dot"></div>
+        <span id="sync-txt" style="font-size:12px;color:rgba(255,255,255,0.7)"></span>
       </div>
-      <button id="clf-btn-ms" class="btn-ms" onclick="handleMSAuth('clf')">
+      <button id="btn-ms" class="btn-ms" onclick="handleMSAuth()">
         <svg width="16" height="16" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
         Conectar Microsoft
       </button>
       <div class="nav-tabs">
-        <button class="nav-btn active" onclick="showClfScreen('nova',this)">Nova</button>
-        <button class="nav-btn" onclick="showClfScreen('historico',this)">Histórico<span class="badge" id="clf-badge">0</span></button>
-        <button class="nav-btn" onclick="showClfScreen('config',this)">Config</button>
+        <button class="nav-btn active" onclick="showScreen('nova',this)">Nova</button>
+        <button class="nav-btn" onclick="showScreen('historico',this)">Histórico<span class="badge" id="badge">0</span></button>
+        <button class="nav-btn" onclick="showScreen('config',this)">Config</button>
       </div>
     </div>
   </div>
 
   <!-- NOVA CLASSIFICAÇÃO -->
-  <div class="screen active" id="clf-screen-nova" style="position:relative">
-    <div id="clf-form-lock-overlay" style="position:absolute;inset:0;z-index:50;background:rgba(250,247,242,0.92);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:2rem;backdrop-filter:blur(3px)">
+  <div class="screen active" id="screen-nova" style="position:relative">
+    <!-- OVERLAY DE BLOQUEIO — exibido quando desconectado -->
+    <div id="form-lock-overlay" style="position:absolute;inset:0;z-index:50;background:rgba(250,247,242,0.92);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:2rem;backdrop-filter:blur(3px)">
       <div style="font-size:48px">🔒</div>
       <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--cafe)">Conexão necessária</div>
-      <div style="font-size:14px;color:var(--text-mid);max-width:320px;line-height:1.6">Para registrar classificações é necessário estar conectado ao Microsoft 365.</div>
-      <button onclick="handleMSAuth('clf')" style="background:var(--cafe);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:9px">
+      <div style="font-size:14px;color:var(--text-mid);max-width:320px;line-height:1.6">Para registrar classificações é necessário estar conectado ao Microsoft 365. Clique no botão abaixo para entrar.</div>
+      <button onclick="handleMSAuth()" style="background:var(--cafe);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:9px">
         <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
         Conectar Microsoft
       </button>
@@ -331,18 +315,28 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
         <div class="form-group"><label>Produtor / Fazenda</label><input type="text" id="f-produtor" placeholder="Nome do produtor"></div>
         <div class="form-group"><label>Quantidade (kg)</label><input type="number" id="f-kg" placeholder="0" min="0" step="0.01" oninput="calcVolume()"></div>
       </div>
-      <div id="calc-volume" style="display:none;margin-top:1rem;background:var(--cream-dark);border-radius:10px;padding:0.9rem 1.2rem;">
+      <!-- Resultado do cálculo — aparece após selecionar o tipo -->
+      <div id="calc-volume" style="display:none;margin-top:1rem;background:var(--cream-dark);border-radius:10px;padding:0.9rem 1.2rem;display:none">
         <div style="display:flex;flex-wrap:wrap;gap:1rem" id="calc-volume-itens"></div>
       </div>
     </div>
+
     <div class="card">
       <div class="section-title">Tipo de café</div>
       <div class="tipo-selector">
-        <div class="tipo-card" id="tipo-beneficiado" onclick="selectTipo('beneficiado')"><div class="tipo-icon">☕</div><div class="tipo-name">Beneficiado</div><div class="tipo-desc">Café processado</div></div>
-        <div class="tipo-card" id="tipo-coco" onclick="selectTipo('coco')"><div class="tipo-icon">🌿</div><div class="tipo-name">Em Coco</div><div class="tipo-desc">Com casca</div></div>
-        <div class="tipo-card" id="tipo-escolha" onclick="selectTipo('escolha')"><div class="tipo-icon">✂️</div><div class="tipo-name">Escolha</div><div class="tipo-desc">Mesa de catação</div></div>
+        <div class="tipo-card" id="tipo-beneficiado" onclick="selectTipo('beneficiado')">
+          <div class="tipo-icon">☕</div><div class="tipo-name">Beneficiado</div><div class="tipo-desc">Café processado</div>
+        </div>
+        <div class="tipo-card" id="tipo-coco" onclick="selectTipo('coco')">
+          <div class="tipo-icon">🌿</div><div class="tipo-name">Em Coco</div><div class="tipo-desc">Com casca</div>
+        </div>
+        <div class="tipo-card" id="tipo-escolha" onclick="selectTipo('escolha')">
+          <div class="tipo-icon">✂️</div><div class="tipo-name">Escolha</div><div class="tipo-desc">Mesa de catação</div>
+        </div>
       </div>
     </div>
+
+    <!-- FORM BENEFICIADO / COCO -->
     <div id="form-bc" style="display:none">
       <div class="card">
         <div class="section-title">Análise</div>
@@ -360,7 +354,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
         </div>
         <div id="campo-renda" style="display:none;margin-top:1rem">
           <div class="section-title">Rendimento</div>
-          <div style="max-width:200px"><div class="form-group"><label>Renda (%)</label><input type="number" id="f-renda" placeholder="0,00" step="0.01" min="0" max="100" oninput="calcVolume()"></div></div>
+          <div style="max-width:200px">
+            <div class="form-group"><label>Renda (%)</label><input type="number" id="f-renda" placeholder="0,00" step="0.01" min="0" max="100" oninput="calcVolume()"></div>
+          </div>
         </div>
         <div style="margin-top:1rem">
           <div class="section-title">Bebida</div>
@@ -393,6 +389,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
         <div class="form-group" style="margin-top:1rem"><label>Observações gerais</label><textarea id="f-obs-bc" placeholder="Anotações adicionais..."></textarea></div>
       </div>
     </div>
+
+    <!-- FORM ESCOLHA -->
     <div id="form-e" style="display:none">
       <div class="card">
         <div class="section-title">Análise</div>
@@ -420,6 +418,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
           <div style="background:var(--cream-dark);border-radius:4px;height:8px;overflow:hidden">
             <div id="soma-barra" style="height:100%;background:var(--cafe-light);border-radius:4px;transition:width 0.3s;width:0%"></div>
           </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--text-light)">
+            <span>Aproveit. + Fundo + Impureza = 100%</span>
+          </div>
         </div>
         <div style="margin-top:1rem">
           <div class="section-title">Bebida</div>
@@ -439,263 +440,81 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
         <div class="form-group" style="margin-top:1rem"><label>Observações gerais</label><textarea id="f-obs-e" placeholder="Anotações adicionais..."></textarea></div>
       </div>
     </div>
-    <div id="btn-salvar-row" style="display:none;margin-top:0.5rem">
-      <button class="btn-primary" onclick="salvarClassificacao()">Salvar Classificação</button>
-    </div>
-  </div>
 
-  <!-- HISTÓRICO CLASSIFICAÇÃO -->
-  <div class="screen" id="clf-screen-historico">
+    <div id="btn-salvar-row" style="display:none;margin-top:0.5rem">
+      <button class="btn-primary" onclick="salvar()">Salvar Classificação</button>
+    </div>
+  </div><!-- fim screen-nova -->
+
+  <!-- HISTÓRICO -->
+  <div class="screen" id="screen-historico">
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
         <div>
-          <div class="section-title" style="margin-bottom:2px">Classificações — <span id="clf-hist-mes"></span></div>
+          <div class="section-title" style="margin-bottom:2px">Classificações — <span id="hist-mes"></span></div>
           <div style="font-size:12px;color:var(--text-light)">Mês atual. Histórico completo no OneDrive.</div>
         </div>
       </div>
-      <div id="clf-hist-loading" style="display:none;text-align:center;padding:2rem;color:var(--text-light);font-size:14px">
+      <div id="hist-loading" style="display:none;text-align:center;padding:2rem;color:var(--text-light);font-size:14px">
         <div style="font-size:28px;margin-bottom:8px">⏳</div>Carregando classificações...
       </div>
-      <div id="clf-hist-container"><div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação este mês.</p></div></div>
+      <div id="hist-container">
+        <div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação este mês.</p></div>
+      </div>
     </div>
   </div>
 
-  <!-- CONFIG CLASSIFICAÇÃO -->
-  <div class="screen" id="clf-screen-config">
+  <!-- CONFIG -->
+  <div class="screen" id="screen-config">
     <div class="card">
       <div class="section-title">Integração Microsoft 365</div>
       <div class="cfg-box">
         <h3>Client ID e Tenant ID</h3>
         <p>IDs do aplicativo registrado no portal Azure.</p>
-        <div class="cfg-input-row"><input type="text" id="clf-cfg-client" placeholder="Client ID"><button class="cfg-confirm" onclick="salvarClfCfg()">Salvar</button></div>
-        <div class="cfg-input-row" style="margin-top:8px"><input type="text" id="clf-cfg-tenant" placeholder="Tenant ID"></div>
+        <div class="cfg-input-row"><input type="text" id="cfg-client" placeholder="Client ID"><button class="cfg-confirm" onclick="salvarCfg()">Salvar</button></div>
+        <div class="cfg-input-row" style="margin-top:8px"><input type="text" id="cfg-tenant" placeholder="Tenant ID"></div>
       </div>
       <div class="cfg-box">
         <h3>Pasta no OneDrive</h3>
         <p>Nome da pasta onde a planilha será salva.</p>
-        <div class="cfg-input-row"><input type="text" id="clf-cfg-path" placeholder="Ex: Classificação"><button class="cfg-confirm" onclick="salvarClfPath()">Salvar</button></div>
+        <div class="cfg-input-row"><input type="text" id="cfg-path" placeholder="Ex: Classificação"><button class="cfg-confirm" onclick="salvarPath()">Salvar</button></div>
       </div>
       <div style="margin-top:1.5rem">
         <div class="section-title">Status</div>
-        <div id="clf-cfg-status" style="font-size:14px;color:var(--text-light);padding:6px 0">Não conectado.</div>
-        <button class="btn-secondary" style="margin-top:10px;width:100%" onclick="handleMSAuth('clf')">Conectar / Reconectar Microsoft</button>
+        <div id="cfg-status" style="font-size:14px;color:var(--text-light);padding:6px 0">Não conectado.</div>
+        <button class="btn-secondary" style="margin-top:10px;width:100%" onclick="handleMSAuth()">
+          <span id="btn-cfg-ms-txt">Conectar / Reconectar Microsoft</span>
+        </button>
       </div>
       <div style="margin-top:1.5rem">
-        <div class="section-title">Sobre</div>
+        <div class="section-title">Sobre o app</div>
         <div style="font-size:13px;color:var(--text-light);line-height:1.9">
-          Versão 3.0 — Classificação de Café Vilela<br>
+          Versão 2.0 — Classificação de Café Vilela<br>
           Banco de dados: Excel no OneDrive (contato@cafevilela.com.br)<br>
           Abas: Janeiro, Fevereiro... (por mês)<br>
-          Arquivos: um por ano (Classificacoes_2026.xlsx)
+          Arquivos: um por ano (Classificações 2026.xlsx)<br>
+          Fotos: OneDrive › Classificação › Fotos › [Mês]<br>
+          Local: apenas o mês atual no tablet
         </div>
       </div>
     </div>
   </div>
-</div><!-- fim .app classificação -->
-</div><!-- fim #app-classificacao -->
+</div>
 
-<!-- ====== APP FRETES ====== -->
-<div id="app-fretes">
-<div class="app">
-  <div class="header">
-    <div class="header-brand">
-      <h1>Gestão de Fretes</h1>
-      <p id="frt-header-date"></p>
-    </div>
-    <div class="header-right">
-      <button class="btn-voltar" onclick="voltarPortal()">← Portal</button>
-      <div id="frt-sync-wrap" style="display:none;align-items:center;gap:6px">
-        <div class="sync-dot pending" id="frt-sync-dot"></div>
-        <span id="frt-sync-txt" style="font-size:12px;color:rgba(255,255,255,0.7)"></span>
-      </div>
-      <button id="frt-btn-ms" class="btn-ms" onclick="handleMSAuth('frt')">
-        <svg width="16" height="16" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
-        Conectar Microsoft
-      </button>
-      <div class="nav-tabs">
-        <button class="nav-btn active" onclick="showFrtScreen('novo',this)">Novo Frete</button>
-        <button class="nav-btn" onclick="showFrtScreen('historico',this)">Histórico<span class="badge" id="frt-badge">0</span></button>
-        <button class="nav-btn" onclick="showFrtScreen('propriedades',this)">Propriedades<span class="badge" id="frt-badge-prop">0</span></button>
-        <button class="nav-btn" onclick="showFrtScreen('config',this)">Config</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- NOVO FRETE -->
-  <div class="screen active" id="frt-screen-novo" style="position:relative">
-    <div id="frt-form-lock-overlay" style="position:absolute;inset:0;z-index:50;background:rgba(250,247,242,0.92);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:2rem;backdrop-filter:blur(3px)">
-      <div style="font-size:48px">🔒</div>
-      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--cafe)">Conexão necessária</div>
-      <div style="font-size:14px;color:var(--text-mid);max-width:320px;line-height:1.6">Para registrar fretes é necessário estar conectado ao Microsoft 365.</div>
-      <button onclick="handleMSAuth('frt')" style="background:var(--cafe);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:9px">
-        <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
-        Conectar Microsoft
-      </button>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Dados do Frete</div>
-      <div class="form-grid">
-        <div class="form-group"><label>Data</label><input type="date" id="frt-data"></div>
-        <div class="form-group"><label>Horário de saída</label><input type="time" id="frt-hora"></div>
-        <div class="form-group"><label>Motorista</label>
-          <select id="frt-motorista">
-            <option value="Carlos">Carlos</option>
-            <option value="João">João</option>
-            <option value="Pedro">Pedro</option>
-            <option value="Outro">Outro</option>
-          </select>
-        </div>
-        <div class="form-group"><label>Veículo / Placa</label><input type="text" id="frt-veiculo" placeholder="Ex: ABC-1234 · Truck"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Propriedade de Origem</div>
-      <div id="frt-prop-select-area">
-        <div class="form-group" style="margin-bottom:1rem">
-          <label>Selecionar propriedade cadastrada</label>
-          <select id="frt-prop-sel" onchange="selecionarPropFrete()">
-            <option value="">— Selecione ou cadastre nova —</option>
-          </select>
-        </div>
-        <div id="frt-prop-info" style="display:none;margin-bottom:1rem"></div>
-      </div>
-      <div class="form-grid">
-        <div class="form-group"><label>Produtor / Fazenda</label><input type="text" id="frt-produtor" placeholder="Nome do produtor"></div>
-        <div class="form-group"><label>Município</label><input type="text" id="frt-municipio" placeholder="Cidade"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Produto e Carga</div>
-      <div class="form-grid">
-        <div class="form-group"><label>Tipo de café</label>
-          <select id="frt-tipo-cafe">
-            <option value="Coco">Café em Coco</option>
-            <option value="Cereja">Café Cereja</option>
-            <option value="Verde">Café Verde (beneficiado)</option>
-            <option value="Boia">Café Bóia</option>
-            <option value="Outro">Outro</option>
-          </select>
-        </div>
-        <div class="form-group"><label>Quantidade (sacas 60kg)</label><input type="number" id="frt-sacas" placeholder="0" min="0" step="1" oninput="calcPesoFrete()"></div>
-        <div class="form-group"><label>Peso total (kg)</label><input type="number" id="frt-peso" placeholder="Calculado" readonly style="background:var(--cream-dark)"></div>
-        <div class="form-group"><label>Destino final</label><input type="text" id="frt-destino" placeholder="Ex: Armazém Vilela"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Informações Adicionais</div>
-      <div class="form-grid">
-        <div class="form-group"><label>Nº NF / Ticket</label><input type="text" id="frt-nf" placeholder="Número da nota fiscal"></div>
-        <div class="form-group"><label>Distância estimada (km)</label><input type="number" id="frt-km" placeholder="0" min="0"></div>
-        <div class="form-group"><label>Valor do frete (R$)</label><input type="number" id="frt-valor" placeholder="0,00" step="0.01" min="0"></div>
-      </div>
-      <div class="form-group" style="margin-top:0.75rem"><label>Observações</label><textarea id="frt-obs" placeholder="Anotações adicionais..."></textarea></div>
-    </div>
-
-    <div style="margin-top:0.5rem">
-      <button class="btn-primary" onclick="salvarFrete()">Salvar Frete</button>
-    </div>
-  </div>
-
-  <!-- HISTÓRICO FRETES -->
-  <div class="screen" id="frt-screen-historico">
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
-        <div>
-          <div class="section-title" style="margin-bottom:2px">Fretes — <span id="frt-hist-mes"></span></div>
-          <div style="font-size:12px;color:var(--text-light)">Mês atual. Histórico completo no OneDrive.</div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <select id="frt-filtro-status" onchange="renderFrtHist()" style="border:0.5px solid var(--border-mid);border-radius:8px;padding:7px 10px;font-size:13px;background:var(--cream);color:var(--text);font-family:'DM Sans',sans-serif;cursor:pointer">
-            <option value="">Todos os status</option>
-            <option value="Agendado">Agendado</option>
-            <option value="Em Rota">Em Rota</option>
-            <option value="Concluído">Concluído</option>
-            <option value="Cancelado">Cancelado</option>
-          </select>
-        </div>
-      </div>
-      <div id="frt-hist-loading" style="display:none;text-align:center;padding:2rem;color:var(--text-light);font-size:14px">
-        <div style="font-size:28px;margin-bottom:8px">⏳</div>Carregando fretes...
-      </div>
-      <div id="frt-hist-container"><div class="empty"><div class="empty-icon">🚛</div><p>Nenhum frete este mês.</p></div></div>
-    </div>
-  </div>
-
-  <!-- PROPRIEDADES -->
-  <div class="screen" id="frt-screen-propriedades">
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
-        <div>
-          <div class="section-title" style="margin-bottom:2px">Propriedades Rurais</div>
-          <div style="font-size:12px;color:var(--text-light)">Clientes e fazendas com localização GPS.</div>
-        </div>
-        <button class="btn-primary" style="width:auto;padding:9px 18px;font-size:13px" onclick="abrirModalProp()">+ Nova Propriedade</button>
-      </div>
-      <div id="prop-lista-container"><div class="empty"><div class="empty-icon">📍</div><p>Nenhuma propriedade cadastrada.</p></div></div>
-    </div>
-  </div>
-
-  <!-- CONFIG FRETES -->
-  <div class="screen" id="frt-screen-config">
-    <div class="card">
-      <div class="section-title">Integração Microsoft 365</div>
-      <div class="cfg-box">
-        <h3>Client ID e Tenant ID</h3>
-        <p>Usa as mesmas credenciais do sistema de Classificação.</p>
-        <div class="cfg-input-row"><input type="text" id="frt-cfg-client" placeholder="Client ID"><button class="cfg-confirm" onclick="salvarFrtCfg()">Salvar</button></div>
-        <div class="cfg-input-row" style="margin-top:8px"><input type="text" id="frt-cfg-tenant" placeholder="Tenant ID"></div>
-      </div>
-      <div class="cfg-box">
-        <h3>Pasta no OneDrive</h3>
-        <p>Pasta raiz onde serão criadas as subpastas de fretes.</p>
-        <div class="cfg-input-row"><input type="text" id="frt-cfg-path" placeholder="Ex: Fretes"><button class="cfg-confirm" onclick="salvarFrtPath()">Salvar</button></div>
-      </div>
-      <div style="margin-top:1.5rem">
-        <div class="section-title">Status</div>
-        <div id="frt-cfg-status" style="font-size:14px;color:var(--text-light);padding:6px 0">Não conectado.</div>
-        <button class="btn-secondary" style="margin-top:10px;width:100%" onclick="handleMSAuth('frt')">Conectar / Reconectar Microsoft</button>
-      </div>
-      <div style="margin-top:1.5rem">
-        <div class="section-title">Estrutura no OneDrive</div>
-        <div style="font-size:13px;color:var(--text-light);line-height:2;background:var(--cream);border-radius:10px;padding:1rem">
-          📁 Fretes/<br>
-          &nbsp;&nbsp;&nbsp;📊 Fretes_2026.xlsx <span style="color:var(--cafe-light)">(aba por mês)</span><br>
-          &nbsp;&nbsp;&nbsp;📊 Clientes_Propriedades.xlsx <span style="color:var(--cafe-light)">(cadastro)</span><br>
-          &nbsp;&nbsp;&nbsp;📁 Localização/ <span style="color:var(--cafe-light)">(arquivos GPS Google Maps)</span>
-        </div>
-      </div>
-      <div style="margin-top:1.5rem">
-        <div class="section-title">Sobre</div>
-        <div style="font-size:13px;color:var(--text-light);line-height:1.9">
-          Versão 1.0 — Gestão de Fretes Café Vilela<br>
-          Banco de dados: Excel no OneDrive (contato@cafevilela.com.br)<br>
-          Abas: Janeiro, Fevereiro... (por mês)<br>
-          Arquivos: um por ano (Fretes_2026.xlsx)
-        </div>
-      </div>
-    </div>
-  </div>
-</div><!-- fim .app fretes -->
-</div><!-- fim #app-fretes -->
-
-<!-- MODAL DETALHE CLASSIFICAÇÃO -->
-<div class="modal-overlay" id="clf-modal">
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
   <div class="modal">
     <div class="modal-header">
-      <h2 id="clf-modal-title"></h2>
-      <button class="modal-close-x" onclick="closeClfModal()">✕</button>
+      <h2 id="modal-title"></h2>
+      <button class="modal-close-x" onclick="closeModal()">✕</button>
     </div>
-    <div id="clf-modal-body"></div>
-    <img id="clf-modal-foto" class="modal-foto" style="display:none;width:100%;border-radius:10px;margin-top:12px">
+    <div id="modal-body"></div>
+    <img id="modal-foto" class="modal-foto" style="display:none">
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeClfModal()" style="flex:1;padding:11px;font-size:13px">Fechar</button>
-      <button class="btn-primary" id="clf-btn-sinc" onclick="sincClfItem()" style="flex:1;padding:11px;font-size:13px;display:none">Sincronizar</button>
+      <button class="btn-secondary" onclick="closeModal()" style="flex:1;padding:11px;font-size:13px">Fechar</button>
+      <button class="btn-primary" id="btn-sinc" onclick="sincItem()" style="flex:1;padding:11px;font-size:13px;display:none">Sincronizar</button>
     </div>
-    <div class="share-section" id="clf-share-section" style="display:none">
+    <div class="share-section" id="share-section" style="display:none">
       <div class="share-label">Compartilhar laudo</div>
       <div class="share-btns">
         <button class="share-btn share-wa" onclick="shareWA()">WhatsApp</button>
@@ -706,884 +525,974 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); min-height:
   </div>
 </div>
 
-<!-- MODAL DETALHE FRETE -->
-<div class="modal-overlay" id="frt-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 id="frt-modal-title"></h2>
-      <button class="modal-close-x" onclick="closeFrtModal()">✕</button>
-    </div>
-    <div id="frt-modal-body"></div>
-    <div class="modal-actions" id="frt-modal-actions">
-      <button class="btn-secondary" onclick="closeFrtModal()" style="flex:1;padding:11px;font-size:13px">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL PROPRIEDADE -->
-<div class="modal-overlay" id="prop-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>📍 Propriedade Rural</h2>
-      <button class="modal-close-x" onclick="closePropModal()">✕</button>
-    </div>
-    <div style="margin-bottom:1rem">
-      <div class="section-title">Dados do Cliente / Produtor</div>
-      <div class="form-grid" style="margin-bottom:1rem">
-        <div class="form-group"><label>Nome da Propriedade / Fazenda</label><input type="text" id="prop-nome" placeholder="Ex: Fazenda Boa Vista"></div>
-        <div class="form-group"><label>Nome do Produtor</label><input type="text" id="prop-produtor" placeholder="Nome completo"></div>
-        <div class="form-group"><label>Município</label><input type="text" id="prop-municipio" placeholder="Cidade / UF"></div>
-        <div class="form-group"><label>Telefone</label><input type="tel" id="prop-telefone" placeholder="(35) 99999-9999"></div>
-      </div>
-      <div class="section-title">Localização GPS (Google Maps)</div>
-      <div style="background:var(--cream);border-radius:10px;padding:1rem;margin-bottom:1rem">
-        <div style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.6">
-          Para obter as coordenadas: abra o Google Maps → clique com botão direito (ou pressione) sobre a propriedade → copie as coordenadas que aparecem no topo do menu.
-        </div>
-        <div class="form-grid" style="margin-bottom:10px">
-          <div class="form-group"><label>Latitude</label><input type="text" id="prop-lat" placeholder="-20.123456" oninput="previewGPS()"></div>
-          <div class="form-group"><label>Longitude</label><input type="text" id="prop-lng" placeholder="-46.123456" oninput="previewGPS()"></div>
-        </div>
-        <button onclick="obterGPSAtual()" style="background:var(--cafe);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:10px">
-          🎯 Usar minha localização atual
-        </button>
-        <div id="gps-preview-box" style="display:none;margin-top:8px"></div>
-      </div>
-      <div class="form-group" style="margin-bottom:1rem"><label>Referências de acesso</label><textarea id="prop-obs" placeholder="Portão azul, 2km após a ponte, estrada de terra..." style="min-height:60px"></textarea></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closePropModal()" style="flex:1;padding:11px;font-size:13px">Cancelar</button>
-      <button class="btn-primary" onclick="salvarPropriedade()" style="flex:1;padding:11px;font-size:13px">Salvar Propriedade</button>
-    </div>
-  </div>
-</div>
-
+<!-- CARD OCULTO PARA COMPARTILHAMENTO -->
 <div id="share-card"></div>
+
 <div class="toast ok" id="toast-ok"></div>
 <div class="toast err" id="toast-err"></div>
 
 <script>
-// ===================== CONSTANTES =====================
+const BEBIDAS = ['Estritamente Mole','Mole','Apenas Mole','Dura','Riada','Rio'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
 const CLIENT_ID = 'ff4e57e2-4fc1-4b2e-8e4a-28a2df5a20c9';
 const TENANT_ID = '9a66e204-c69d-486c-97ff-40f69be9595f';
 const REDIRECT_URI = 'https://andretvilela.github.io/classificacao-cafe/';
 const MS_SCOPES = 'Files.ReadWrite User.Read offline_access';
-const LOGIN_HINT = 'contato@cafevilela.com.br';
 const TOKEN_KEY = 'cafe_ms_token';
 const TOKEN_EXP_KEY = 'cafe_ms_token_exp';
-const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const BEBIDAS = ['Estritamente Mole','Mole','Apenas Mole','Dura','Riada','Rio'];
 
-// ===================== TOKEN =====================
-let msToken = null;
+let clf = '', tipo = '', selbBC = {}, selbE = {}, fotoBC = null, fotoE = null, itemId = null, msToken = null;
 let tokenRefreshTimer = null;
-let appAtivo = ''; // 'clf' ou 'frt'
+let clientId = localStorage.getItem('cafe_client_id') || CLIENT_ID;
+let tenantId = localStorage.getItem('cafe_tenant_id') || TENANT_ID;
+let odPath = localStorage.getItem('cafe_od_path') || 'Classificação';
+let dados = [];
 
-function salvarToken(t, exp) {
-  const expAt = Date.now() + ((parseInt(exp)||3600) - 120) * 1000;
-  localStorage.setItem(TOKEN_KEY, t);
+try {
+  const h = new Date(), k = `cafe_${h.getFullYear()}_${h.getMonth()}`;
+  dados = JSON.parse(localStorage.getItem(k) || '[]');
+} catch(e) { dados = []; }
+
+function salvarToken(token, expiresIn) {
+  const expAt = Date.now() + ((parseInt(expiresIn)||3600) - 120) * 1000; // 2min antes de expirar
+  localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(TOKEN_EXP_KEY, expAt.toString());
 }
+
 function carregarTokenSalvo() {
-  const t = localStorage.getItem(TOKEN_KEY);
-  const exp = parseInt(localStorage.getItem(TOKEN_EXP_KEY)||'0');
-  return (t && exp > Date.now()) ? t : null;
+  const token = localStorage.getItem(TOKEN_KEY);
+  const expAt = parseInt(localStorage.getItem(TOKEN_EXP_KEY)||'0');
+  if(token && expAt > Date.now()) return token;
+  return null;
 }
-function agendarRefresh(exp) {
+
+function agendarRefresh(expiresIn) {
   if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
-  tokenRefreshTimer = setTimeout(silentRefresh, Math.max(((parseInt(exp)||3600)-180)*1000, 10000));
+  const ms = ((parseInt(expiresIn)||3600) - 180) * 1000; // refresh 3min antes
+  tokenRefreshTimer = setTimeout(()=>{ silentRefresh(); }, Math.max(ms, 10000));
 }
+
 function silentRefresh() {
+  // Tenta refresh silencioso via iframe
   const iframe = document.createElement('iframe');
   iframe.style.display = 'none';
-  iframe.src = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(MS_SCOPES)}&prompt=none&login_hint=${encodeURIComponent(LOGIN_HINT)}&response_mode=fragment`;
+  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(MS_SCOPES)}&prompt=none&login_hint=${encodeURIComponent(LOGIN_HINT)}&response_mode=fragment`;
+  iframe.src = url;
   iframe.onload = () => {
     try {
-      const p = new URLSearchParams(iframe.contentWindow.location.hash.substring(1));
-      const t = p.get('access_token'), exp = p.get('expires_in');
-      if(t) { msToken = t; salvarToken(t, exp); agendarRefresh(exp); }
-    } catch(e) {}
+      const hash = iframe.contentWindow.location.hash;
+      const p = new URLSearchParams(hash.substring(1));
+      const t = p.get('access_token');
+      const exp = p.get('expires_in');
+      if(t) { msToken = t; salvarToken(t, exp); agendarRefresh(exp); console.log('Token renovado silenciosamente.'); }
+    } catch(e) {
+      // cross-origin block após redirect — token ainda pode ser válido
+    }
     document.body.removeChild(iframe);
   };
   document.body.appendChild(iframe);
 }
 
-function handleMSAuth(app) {
-  appAtivo = app;
+function salvarLocal() {
+  const h = new Date(), k = `cafe_${h.getFullYear()}_${h.getMonth()}`;
+  try { localStorage.setItem(k, JSON.stringify(dados)); } catch(e) {}
+}
+
+async function carregarDoOneDrive() {
+  if(!msToken) return;
+  setSinc('pending','Carregando...');
+  // Mostra loading no histórico se estiver na tela
+  const loading = document.getElementById('hist-loading');
+  const container = document.getElementById('hist-container');
+  if(loading) { loading.style.display='block'; if(container) container.style.display='none'; }
+  try {
+    const h = new Date();
+    const ano = h.getFullYear(), mes = MESES[h.getMonth()];
+    const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const nomeArq = `Classificacoes_${ano}.xlsx`;
+    const pathArq = `${pastaRaiz}/${nomeArq}`;
+    const pathArqEnc2 = pathArq.split('/').map(p => encodeURIComponent(p)).join('/');
+    console.log('[Histórico] Buscando arquivo:', pathArq);
+    const checkR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathArqEnc2}`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!checkR.ok) {
+      console.log('[Histórico] Arquivo não encontrado, status:', checkR.status);
+      setSinc('ok','Conectado'); return;
+    }
+    const fileData = await checkR.json();
+    const fileId = fileData.id;
+    const metaR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}?select=name,size,file`,{headers:{Authorization:'Bearer '+msToken}});
+    const meta = await metaR.json();
+    if(!meta.file || meta.size < 1000) { setSinc('ok','Conectado'); return; }
+    const abasR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!abasR.ok) { setSinc('ok','Conectado'); return; }
+    const abasData = await abasR.json();
+    const abas = (abasData.value||[]).map(s=>s.name);
+    console.log('[Histórico] Abas encontradas:', abas, '| Buscando aba:', mes);
+    if(!abas.includes(mes)) { setSinc('ok','Conectado'); toastOk('Sem classificações em ' + mes + '.'); return; }
+    const rangeR = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,
+      {headers:{Authorization:'Bearer '+msToken}}
+    );
+    if(!rangeR.ok) { setSinc('ok','Conectado'); return; }
+    const rangeData = await rangeR.json();
+    const rows = rangeData.values || [];
+    console.log('[Histórico] Linhas encontradas:', rows.length);
+    if(rows.length <= 1) { setSinc('ok','Conectado'); return; }
+    const dadosOneDrive = [];
+    for(let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if(!r[3]) continue;
+      const partes = r[0] ? String(r[0]).split('/') : [];
+      const dataISO = partes.length===3 ? `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}` : '';
+      const defeitosObj = {};
+      if(r[14]) { String(r[14]).split('|').forEach(p => { const [k,v]=p.trim().split(':'); if(k&&v) defeitosObj[k.trim()]=parseInt(v)||0; }); }
+      // Detecta formato novo (col E = Kg, col F = Sacas/Arrobas) vs antigo (col E = Sacas, col F = Tipo)
+      const isNovoFormato = r[6] && ['Beneficiado','Em Coco','Escolha'].includes(r[6]);
+      const tipoNorm = isNovoFormato
+        ? (r[6]==='Beneficiado'?'beneficiado':r[6]==='Em Coco'?'coco':'escolha')
+        : (r[5]==='Beneficiado'?'beneficiado':r[5]==='Em Coco'?'coco':'escolha');
+      dadosOneDrive.push({
+        id: Date.now() + i * 7,
+        data: dataISO,
+        clf:       r[1]  || '',
+        lote:      r[2]  || '',
+        produtor:  r[3]  || '',
+        kg:        isNovoFormato ? (r[4] || '') : '',
+        sacas:     isNovoFormato ? (r[5] || '') : (r[4] || ''),
+        tipo:      tipoNorm,
+        catacao:   isNovoFormato ? (r[7]  || '') : (r[6]  || ''),
+        impureza:  isNovoFormato ? (r[8]  || '') : (r[7]  || ''),
+        umidade:   isNovoFormato ? (r[9]  || '') : (r[8]  || ''),
+        pen17:     isNovoFormato ? (r[10] || '') : (r[9]  || ''),
+        penfundo:  isNovoFormato ? (r[11] || '') : (r[10] || ''),
+        renda:     isNovoFormato ? (r[12] || '') : (r[11] || ''),
+        bebida:    isNovoFormato ? (r[13] || '') : (r[12] || ''),
+        bebidaObs: isNovoFormato ? (r[14] || '') : (r[13] || ''),
+        defeitos:  defeitosObj,
+        aprov:     isNovoFormato ? (r[16] || '') : (r[15] || ''),
+        impPau:    isNovoFormato ? (r[18] || '') : (r[17] || ''),
+        impPedra:  isNovoFormato ? (r[19] || '') : (r[18] || ''),
+        impCasca:  isNovoFormato ? (r[20] || '') : (r[19] || ''),
+        obs:       isNovoFormato ? (r[21] || '') : (r[20] || ''),
+        fotoUrl:   isNovoFormato ? (r[22] || '') : (r[21] || ''),
+        fotoPath:  isNovoFormato ? (r[22] || '') : (r[21] || ''),
+        arrobas:   isNovoFormato ? (r[23] || '') : '',
+        prevSacas: isNovoFormato ? (r[24] || '') : '',
+        sinc: true,
+        fromCloud: true
+      });
+    }
+    if(dadosOneDrive.length > 0) {
+      const chave = d => `${d.lote}|${d.produtor}|${d.data}`;
+      const chavesCloud = new Set(dadosOneDrive.map(chave));
+      const locaisNaoSinc = dados.filter(d => !d.sinc && !chavesCloud.has(chave(d)));
+      dados = [...locaisNaoSinc, ...dadosOneDrive];
+      salvarLocal();
+      updateBadge();
+    }
+    setSinc('ok','Sincronizado');
+    toastOk(dadosOneDrive.length + ' classificações carregadas.');
+  } catch(e) {
+    console.error('[Histórico] Erro:', e);
+    setSinc('ok','Conectado');
+    toastErr('Erro ao carregar histórico: ' + (e.message||''));
+  } finally {
+    if(loading) loading.style.display = 'none';
+    if(container) container.style.display = 'block';
+    renderHist();
+  }
+}
+
+function calcImpTotal() {
+  const pau = parseFloat(document.getElementById('f-imp-pau')?.value)||0;
+  const pedra = parseFloat(document.getElementById('f-imp-pedra')?.value)||0;
+  const casca = parseFloat(document.getElementById('f-imp-casca')?.value)||0;
+  const total = pau + pedra + casca;
+  const el = document.getElementById('imp-total-display');
+  if(el) el.textContent = total.toFixed(2).replace('.',',') + '%';
+  const aprov = parseFloat(document.getElementById('f-aprov')?.value)||0;
+  const fundo = parseFloat(document.getElementById('f-penfundo-e')?.value)||0;
+  const soma = aprov + fundo + total;
+  const somaEl = document.getElementById('soma-total-display');
+  const barraEl = document.getElementById('soma-barra');
+  if(somaEl) somaEl.textContent = soma.toFixed(2).replace('.',',') + '%';
+  if(barraEl) {
+    const pct = Math.min(soma, 100);
+    barraEl.style.width = pct + '%';
+    barraEl.style.background = Math.abs(soma - 100) < 0.1 ? '#4CAF50' : soma > 100 ? '#E53935' : 'var(--cafe-light)';
+  }
+  if(somaEl) somaEl.style.color = Math.abs(soma-100)<0.1 ? '#2E7D32' : soma>100 ? '#C62828' : 'var(--text-mid)';
+}
+
+function init() {
+  const h = new Date(), pad = n => String(n).padStart(2,'0');
+  document.getElementById('f-data').value = `${h.getFullYear()}-${pad(h.getMonth()+1)}-${pad(h.getDate())}`;
+  document.getElementById('header-date').textContent = h.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('hist-mes').textContent = MESES[h.getMonth()] + ' ' + h.getFullYear();
+  document.getElementById('cfg-client').value = clientId;
+  document.getElementById('cfg-tenant').value = tenantId;
+  document.getElementById('cfg-path').value = odPath;
+  buildBebidas('bc'); buildBebidas('e');
+  updateBadge();
+  setFormularioBloqueado(true); // começa bloqueado até confirmar conexão
+  checkToken();
+}
+
+function buildBebidas(g) {
+  document.getElementById('beb-' + g).innerHTML = BEBIDAS.map(b =>
+    `<button class="bebida-toggle" onclick="toggleBeb(this,'${b}','${g}')">${b}</button>`).join('');
+}
+
+function toggleBeb(btn, b, g) {
+  const s = g==='bc' ? selbBC : selbE;
+  if (s[b] !== undefined) { delete s[b]; btn.classList.remove('selected'); }
+  else { s[b] = ''; btn.classList.add('selected'); }
+  renderXic(g);
+}
+
+function renderXic(g) {
+  const s = g==='bc' ? selbBC : selbE;
+  const c = document.getElementById('xic-' + g);
+  const keys = BEBIDAS.filter(b => s[b] !== undefined);
+  c.innerHTML = keys.map(b => `<div class="xicara-row">
+    <span class="xicara-label">${b}</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="number" min="1" max="20" placeholder="0" value="${s[b]||''}" oninput="updXic(this,'${b}','${g}')">
+      <span class="xicara-unit">xíc.</span>
+    </div>
+  </div>`).join('');
+}
+
+function updXic(inp, b, g) { if(g==='bc') selbBC[b]=inp.value; else selbE[b]=inp.value; }
+
+function bebStr(s) {
+  const p = Object.entries(s).filter(([,v])=>v!==undefined);
+  return p.length ? p.map(([b,x])=>x?`${b} (${x} xíc.)`:b).join(' + ') : '';
+}
+
+function showScreen(n, btn) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+n).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(n==='historico') { renderHist(); if(msToken) carregarDoOneDrive().catch(()=>{}); }
+}
+
+function selectClf(nome, id) {
+  clf = nome;
+  document.querySelectorAll('.clf-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById(id).classList.add('selected');
+}
+
+function selectTipo(t) {
+  tipo = t;
+  document.querySelectorAll('.tipo-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('tipo-'+t).classList.add('selected');
+  document.getElementById('form-bc').style.display = (t==='beneficiado'||t==='coco') ? 'block' : 'none';
+  document.getElementById('form-e').style.display = t==='escolha' ? 'block' : 'none';
+  document.getElementById('campo-renda').style.display = t==='coco' ? 'block' : 'none';
+  document.getElementById('btn-salvar-row').style.display = 'block';
+  calcVolume();
+  setTimeout(()=>document.getElementById('btn-salvar-row').scrollIntoView({behavior:'smooth',block:'end'}),200);
+}
+
+function calcVolume() {
+  const kg = parseFloat(document.getElementById('f-kg')?.value) || 0;
+  const box = document.getElementById('calc-volume');
+  const itens = document.getElementById('calc-volume-itens');
+  if(!tipo || kg <= 0) { if(box) box.style.display='none'; return; }
+  if(box) box.style.display='block';
+  let html = '';
+  if(tipo === 'beneficiado' || tipo === 'escolha') {
+    const sacas = (kg / 60).toFixed(2);
+    html = `<div class="calc-item">
+      <span class="calc-item-lbl">Sacas (60kg)</span>
+      <span class="calc-item-val">${sacas}</span>
+      <span class="calc-item-unit">sacas</span>
+    </div>`;
+  } else if(tipo === 'coco') {
+    const arrobas = (kg / 30).toFixed(2);
+    const renda = parseFloat(document.getElementById('f-renda')?.value) || 0;
+    const prevSacas = renda > 0 ? ((kg * renda / 100) / 60).toFixed(2) : null;
+    html = `<div class="calc-item">
+      <span class="calc-item-lbl">Arrobas (30kg)</span>
+      <span class="calc-item-val">${arrobas}</span>
+      <span class="calc-item-unit">arrobas</span>
+    </div>`;
+    if(prevSacas) {
+      html += `<div class="calc-item" style="border-left:2px solid var(--cafe-light);padding-left:1rem">
+        <span class="calc-item-lbl">Previsão sacas beneficiado</span>
+        <span class="calc-item-val">${prevSacas}</span>
+        <span class="calc-item-unit">sacas de 60kg · renda ${renda}%</span>
+      </div>`;
+    } else {
+      html += `<div class="calc-item" style="border-left:2px solid var(--border-mid);padding-left:1rem;opacity:0.6">
+        <span class="calc-item-lbl">Previsão sacas beneficiado</span>
+        <span class="calc-item-val">—</span>
+        <span class="calc-item-unit">informe a renda para calcular</span>
+      </div>`;
+    }
+  }
+  if(itens) itens.innerHTML = html;
+}
+
+function previewFoto(ev, prevId, iconId, hintId) {
+  const f = ev.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    document.getElementById(prevId).src = e.target.result;
+    document.getElementById(prevId).style.display = 'block';
+    document.getElementById(iconId).style.display = 'none';
+    document.getElementById(hintId).style.display = 'none';
+    if(prevId==='prev-bc') fotoBC=e.target.result; else fotoE=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function getDefeitos() {
+  const lbls = ['Preto','Verde','Ardido','Brocado','Concha','Marinheiro','Palha/Pau','Coco'];
+  const r = {};
+  document.querySelectorAll('#def-bc .defeito-item input').forEach((i,idx)=>{ if(i.value>0) r[lbls[idx]]=parseInt(i.value); });
+  return r;
+}
+
+async function salvar() {
+  if(!clf) { alert('Selecione o classificador.'); return; }
+  if(tipo==='escolha') {
+    const aprov = parseFloat(document.getElementById('f-aprov').value)||0;
+    const fundo = parseFloat(document.getElementById('f-penfundo-e').value)||0;
+    const pau = parseFloat(document.getElementById('f-imp-pau').value)||0;
+    const pedra = parseFloat(document.getElementById('f-imp-pedra').value)||0;
+    const casca = parseFloat(document.getElementById('f-imp-casca').value)||0;
+    const soma = aprov + fundo + pau + pedra + casca;
+    if(aprov > 0 || fundo > 0 || pau > 0 || pedra > 0 || casca > 0) {
+      if(Math.abs(soma - 100) > 0.1) {
+        toastErr('Verificar classificação: Aproveitamento + Fundo + Impureza = ' + soma.toFixed(2) + '% (deve ser 100%)');
+        return;
+      }
+    }
+  }
+  if(!tipo) { alert('Selecione o tipo de café.'); return; }
+  if(!document.getElementById('f-produtor').value) { alert('Informe o produtor/fazenda.'); return; }
+
+  const kg = parseFloat(document.getElementById('f-kg').value) || 0;
+  const sacasCalc = tipo !== 'coco' ? (kg / 60) : 0;
+  const arrobasCalc = tipo === 'coco' ? (kg / 30) : 0;
+  const rendaVal = parseFloat(document.getElementById('f-renda')?.value) || 0;
+  const prevSacasCalc = tipo === 'coco' && rendaVal > 0 ? ((kg * rendaVal / 100) / 60) : 0;
+
+  const base = {
+    id: Date.now(),
+    data: document.getElementById('f-data').value,
+    lote: document.getElementById('f-lote').value,
+    produtor: document.getElementById('f-produtor').value,
+    kg: kg,
+    sacas: tipo !== 'coco' ? sacasCalc.toFixed(2) : arrobasCalc.toFixed(2),
+    arrobas: arrobasCalc > 0 ? arrobasCalc.toFixed(2) : '',
+    prevSacas: prevSacasCalc > 0 ? prevSacasCalc.toFixed(2) : '',
+    tipo, clf, sinc: false
+  };
+
+  const extra = tipo!=='escolha' ? {
+    catacao: document.getElementById('f-catacao').value,
+    impureza: document.getElementById('f-impureza').value,
+    umidade: document.getElementById('f-umidade').value,
+    pen17: document.getElementById('f-pen17').value,
+    penfundo: document.getElementById('f-penfundo').value,
+    renda: tipo==='coco' ? document.getElementById('f-renda').value : '',
+    bebida: bebStr(selbBC),
+    bebidaObs: document.getElementById('f-bobs-bc').value,
+    defeitos: getDefeitos(),
+    obs: document.getElementById('f-obs-bc').value,
+    foto: fotoBC
+  } : {
+    aprov: document.getElementById('f-aprov').value,
+    penfundo: document.getElementById('f-penfundo-e').value,
+    impPau: document.getElementById('f-imp-pau').value,
+    impPedra: document.getElementById('f-imp-pedra').value,
+    impCasca: document.getElementById('f-imp-casca').value,
+    bebida: bebStr(selbE),
+    bebidaObs: document.getElementById('f-bobs-e').value,
+    obs: document.getElementById('f-obs-e').value,
+    foto: fotoE
+  };
+
+  if(!msToken) {
+    toastErr('Sem conexão com Microsoft. Conecte antes de salvar.');
+    return;
+  }
+
+  const reg = {...base, ...extra};
+  dados.unshift(reg);
+  salvarLocal();
+  updateBadge();
+  toastOk('Classificação salva! Sincronizando...');
+  resetForm();
+  await sincReg(reg);
+}
+
+// ===== MICROSOFT GRAPH =====
+
+function checkToken() {
+  // 1. Verifica se veio token na URL (após login)
+  const p = new URLSearchParams(window.location.hash.substring(1));
+  const t = p.get('access_token');
+  const exp = p.get('expires_in');
+  if(t) {
+    msToken = t;
+    salvarToken(t, exp);
+    agendarRefresh(exp);
+    window.history.replaceState({},'',' ');
+    onConnected();
+    return;
+  }
+  // 2. Tenta carregar token salvo (persistência entre sessões)
+  const saved = carregarTokenSalvo();
+  if(saved) {
+    msToken = saved;
+    // Valida token com a API antes de considerar conectado
+    fetch('https://graph.microsoft.com/v1.0/me', {headers:{Authorization:'Bearer '+saved}})
+      .then(r => {
+        if(r.ok) {
+          const expAt = parseInt(localStorage.getItem(TOKEN_EXP_KEY)||'0');
+          const remainSecs = Math.max(0, (expAt - Date.now()) / 1000);
+          agendarRefresh(remainSecs);
+          onConnected();
+        } else {
+          msToken = null;
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(TOKEN_EXP_KEY);
+          setDesconectado();
+        }
+      })
+      .catch(() => { msToken = saved; onConnected(); }); // offline — aceita token salvo
+    return;
+  }
+  setDesconectado();
+}
+
+function onConnected() {
+  const btn = document.getElementById('btn-ms');
+  btn.className = 'btn-ms connected';
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg> Conectado`;
+  document.getElementById('cfg-status').textContent = 'Conectado ao Microsoft 365.';
+  document.getElementById('cfg-status').style.color = '#2E7D32';
+  setSinc('ok','Conectado');
+  setFormularioBloqueado(false);
+  carregarDoOneDrive().catch(()=>{});
+}
+
+function setDesconectado() {
+  msToken = null;
+  const btn = document.getElementById('btn-ms');
+  btn.className = 'btn-ms';
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg> Conectar Microsoft`;
+  const statusEl = document.getElementById('cfg-status');
+  if(statusEl) { statusEl.textContent = 'Desconectado.'; statusEl.style.color = '#C62828'; }
+  setSinc('error','Desconectado');
+  setFormularioBloqueado(true);
+}
+
+function setFormularioBloqueado(bloqueado) {
+  const overlay = document.getElementById('form-lock-overlay');
+  if(overlay) overlay.style.display = bloqueado ? 'flex' : 'none';
+}
+
+const LOGIN_HINT = 'contato@cafevilela.com.br';
+
+function handleMSAuth() {
   if(msToken) {
-    if(confirm('Deseja desconectar a conta Microsoft?')) {
-      localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_EXP_KEY);
+    if(confirm('Deseja desconectar a conta Microsoft?\n\nAo confirmar, você precisará fazer login novamente.')) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_EXP_KEY);
       if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
-      msToken = null;
-      setDesconectado('clf'); setDesconectado('frt');
+      setDesconectado();
       toastOk('Desconectado.');
     }
     return;
   }
-  localStorage.setItem('cafe_app_ativo', app);
-  window.location.href = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/authorize`
-    + `?client_id=${CLIENT_ID}&response_type=token`
+  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`
+    + `?client_id=${clientId}`
+    + `&response_type=token`
     + `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`
     + `&scope=${encodeURIComponent(MS_SCOPES)}`
-    + `&response_mode=fragment&login_hint=${encodeURIComponent(LOGIN_HINT)}&prompt=login`;
+    + `&response_mode=fragment`
+    + `&login_hint=${encodeURIComponent(LOGIN_HINT)}`
+    + `&prompt=login`;
+  window.location.href = url;
 }
 
-function onConnected(app) {
-  ['clf','frt'].forEach(a => {
-    const btn = document.getElementById(a+'-btn-ms');
-    if(btn) { btn.className='btn-ms connected'; btn.innerHTML=`<svg width="16" height="16" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg> Conectado`; }
-    setSinc(a,'ok','Conectado');
-    setFormBloqueado(a, false);
-    const st = document.getElementById(a+'-cfg-status');
-    if(st) { st.textContent='Conectado ao Microsoft 365.'; st.style.color='#2E7D32'; }
+async function sincReg(reg) {
+  setSinc('pending','Sincronizando...');
+  try {
+    // Testar token primeiro
+    const testR = await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+msToken}});
+    if(!testR.ok) {
+      // Token expirado — limpa e pede reconexão
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_EXP_KEY);
+      msToken = null;
+      setDesconectado();
+      throw new Error('Sessão expirada. Clique em "Conectar Microsoft" para reconectar.');
+    }
+    const me = await testR.json();
+    console.log('Usuário:', me.userPrincipalName);
+
+    let fotoUrl = '';
+    if(reg.foto) {
+      try { fotoUrl = await uploadFoto(reg); }
+      catch(e) { console.warn('Foto falhou:', e.message); fotoUrl = ''; }
+    }
+
+    await appendExcel(reg, fotoUrl);
+    reg.sinc = true; reg.fotoUrl = fotoUrl;
+    salvarLocal();
+    setSinc('ok','Sincronizado');
+    toastOk('Sincronizado com OneDrive!');
+  } catch(e) {
+    setSinc('error','Erro');
+    console.error('Erro sincronização:', e);
+    toastErr('Erro: ' + (e.message||'Verifique a conexão.'));
+  }
+}
+
+async function uploadFoto(reg) {
+  const d = new Date(reg.data+'T12:00:00');
+  const sub = MESES[d.getMonth()] + ' ' + d.getFullYear();
+  const nomeProdutor = (reg.produtor||'sem').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_-]/g,'');
+  const nome = `foto_${nomeProdutor}_${reg.data}_${reg.id}.jpg`;
+  const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const subNorm = sub.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const pathFoto = `${pastaRaiz}/Fotos/${subNorm}/${nome}`;
+  const blob = b64toBlob(reg.foto);
+  const pathFotoEnc = pathFoto.split('/').map(p => encodeURIComponent(p)).join('/');
+  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathFotoEnc}:/content`,{
+    method:'PUT', headers:{Authorization:'Bearer '+msToken,'Content-Type':'image/jpeg'}, body:blob
   });
-}
-function setDesconectado(a) {
-  const btn = document.getElementById(a+'-btn-ms');
-  if(btn) { btn.className='btn-ms'; btn.innerHTML=`<svg width="16" height="16" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg> Conectar Microsoft`; }
-  setSinc(a,'error','Desconectado');
-  setFormBloqueado(a, true);
-  const st = document.getElementById(a+'-cfg-status');
-  if(st) { st.textContent='Desconectado.'; st.style.color='#C62828'; }
-}
-function setSinc(a, tipo, msg) {
-  const w=document.getElementById(a+'-sync-wrap'), d=document.getElementById(a+'-sync-dot'), t=document.getElementById(a+'-sync-txt');
-  if(w) w.style.display='flex'; if(d) d.className='sync-dot '+tipo; if(t) t.textContent=msg;
-}
-function setFormBloqueado(a, bl) {
-  const el = document.getElementById(a+'-form-lock-overlay');
-  if(el) el.style.display = bl ? 'flex' : 'none';
-}
-
-function checkToken() {
-  const p = new URLSearchParams(window.location.hash.substring(1));
-  const t = p.get('access_token'), exp = p.get('expires_in');
-  if(t) {
-    msToken = t; salvarToken(t, exp); agendarRefresh(exp);
-    window.history.replaceState({},'',' ');
-    const app = localStorage.getItem('cafe_app_ativo') || 'clf';
-    onConnected(app);
-    abrirApp(app);
-    if(app==='clf') carregarClfOneDrive().catch(()=>{});
-    if(app==='frt') { carregarFrtOneDrive().catch(()=>{}); carregarPropriedadesOneDrive().catch(()=>{}); }
-    return;
+  if(!r.ok) {
+    const err = await r.json().catch(()=>({}));
+    throw new Error('Falha upload foto: ' + (err.error?.message||r.status));
   }
-  const saved = carregarTokenSalvo();
-  if(saved) {
-    msToken = saved;
-    fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+saved}})
-      .then(r => {
-        if(r.ok) { const rem=Math.max(0,(parseInt(localStorage.getItem(TOKEN_EXP_KEY)||'0')-Date.now())/1000); agendarRefresh(rem); onConnected(''); }
-        else { msToken=null; localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_EXP_KEY); setDesconectado('clf'); setDesconectado('frt'); }
-      }).catch(() => { msToken=saved; onConnected(''); });
-  } else { setDesconectado('clf'); setDesconectado('frt'); }
+  // Salva o path no registro local para uso offline imediato
+  reg.fotoPath = pathFoto;
+  // Retorna o path real para salvar no Excel — legível e permanente
+  return pathFoto;
 }
 
-// ===================== PORTAL =====================
-function abrirApp(app) {
-  document.getElementById('portal').style.display = 'none';
-  document.getElementById('app-classificacao').style.display = app==='clf' ? 'block' : 'none';
-  document.getElementById('app-fretes').style.display = app==='frt' ? 'block' : 'none';
-  if(app==='clf') initClf();
-  if(app==='frt') initFrt();
-}
-function voltarPortal() {
-  document.getElementById('portal').style.display = 'flex';
-  document.getElementById('app-classificacao').style.display = 'none';
-  document.getElementById('app-fretes').style.display = 'none';
-}
-
-// ===================== CLASSIFICAÇÃO =====================
-let clf='', tipo='', selbBC={}, selbE={}, fotoBC=null, fotoE=null, clfItemId=null;
-let dadosClf = [];
-let clfClientId = localStorage.getItem('cafe_client_id') || CLIENT_ID;
-let clfTenantId = localStorage.getItem('cafe_tenant_id') || TENANT_ID;
-let clfOdPath = localStorage.getItem('cafe_od_path') || 'Classificação';
-
-function initClf() {
-  const h=new Date(), pad=n=>String(n).padStart(2,'0');
-  document.getElementById('f-data').value=`${h.getFullYear()}-${pad(h.getMonth()+1)}-${pad(h.getDate())}`;
-  document.getElementById('clf-header-date').textContent=h.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('clf-hist-mes').textContent=MESES[h.getMonth()]+' '+h.getFullYear();
-  document.getElementById('clf-cfg-client').value=clfClientId;
-  document.getElementById('clf-cfg-tenant').value=clfTenantId;
-  document.getElementById('clf-cfg-path').value=clfOdPath;
-  try { const k=`cafe_${h.getFullYear()}_${h.getMonth()}`; dadosClf=JSON.parse(localStorage.getItem(k)||'[]'); } catch(e){dadosClf=[];}
-  buildBebidas('bc'); buildBebidas('e');
-  updateClfBadge();
-}
-function showClfScreen(n,btn) {
-  document.querySelectorAll('#app-classificacao .screen').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('#app-classificacao .nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('clf-screen-'+n).classList.add('active');
-  if(btn) btn.classList.add('active');
-  if(n==='historico') { renderClfHist(); if(msToken) carregarClfOneDrive().catch(()=>{}); }
-}
-function updateClfBadge() { document.getElementById('clf-badge').textContent=dadosClf.length; }
-function salvarClfLocal() {
-  const h=new Date(), k=`cafe_${h.getFullYear()}_${h.getMonth()}`;
-  try { localStorage.setItem(k, JSON.stringify(dadosClf)); } catch(e){}
-}
-function salvarClfCfg() { clfClientId=document.getElementById('clf-cfg-client').value.trim(); clfTenantId=document.getElementById('clf-cfg-tenant').value.trim(); localStorage.setItem('cafe_client_id',clfClientId); localStorage.setItem('cafe_tenant_id',clfTenantId); toastOk('Configuração salva!'); }
-function salvarClfPath() { clfOdPath=document.getElementById('clf-cfg-path').value.trim()||'Classificação'; localStorage.setItem('cafe_od_path',clfOdPath); toastOk('Pasta salva!'); }
-function buildBebidas(g) { document.getElementById('beb-'+g).innerHTML=BEBIDAS.map(b=>`<button class="bebida-toggle" onclick="toggleBeb(this,'${b}','${g}')">${b}</button>`).join(''); }
-function toggleBeb(btn,b,g) { const s=g==='bc'?selbBC:selbE; if(s[b]!==undefined){delete s[b];btn.classList.remove('selected');}else{s[b]='';btn.classList.add('selected');} renderXic(g); }
-function renderXic(g) {
-  const s=g==='bc'?selbBC:selbE, c=document.getElementById('xic-'+g);
-  c.innerHTML=BEBIDAS.filter(b=>s[b]!==undefined).map(b=>`<div class="xicara-row"><span class="xicara-label">${b}</span><div style="display:flex;align-items:center;gap:6px"><input type="number" min="1" max="20" placeholder="0" value="${s[b]||''}" oninput="updXic(this,'${b}','${g}')"><span class="xicara-unit">xíc.</span></div></div>`).join('');
-}
-function updXic(inp,b,g){if(g==='bc')selbBC[b]=inp.value;else selbE[b]=inp.value;}
-function bebStr(s){const p=Object.entries(s).filter(([,v])=>v!==undefined);return p.length?p.map(([b,x])=>x?`${b} (${x} xíc.)`:b).join(' + '):'';}
-function selectClf(nome,id){clf=nome;document.querySelectorAll('.clf-btn').forEach(b=>b.classList.remove('selected'));document.getElementById(id).classList.add('selected');}
-function selectTipo(t){
-  tipo=t;
-  document.querySelectorAll('.tipo-card').forEach(c=>c.classList.remove('selected'));
-  document.getElementById('tipo-'+t).classList.add('selected');
-  document.getElementById('form-bc').style.display=(t==='beneficiado'||t==='coco')?'block':'none';
-  document.getElementById('form-e').style.display=t==='escolha'?'block':'none';
-  document.getElementById('campo-renda').style.display=t==='coco'?'block':'none';
-  document.getElementById('btn-salvar-row').style.display='block';
-  calcVolume();
-  setTimeout(()=>document.getElementById('btn-salvar-row').scrollIntoView({behavior:'smooth',block:'end'}),200);
-}
-function calcVolume(){
-  const kg=parseFloat(document.getElementById('f-kg')?.value)||0;
-  const box=document.getElementById('calc-volume'), itens=document.getElementById('calc-volume-itens');
-  if(!tipo||kg<=0){if(box)box.style.display='none';return;}
-  if(box)box.style.display='block';
-  let html='';
-  if(tipo==='beneficiado'||tipo==='escolha'){html=`<div class="calc-item"><span class="calc-item-lbl">Sacas (60kg)</span><span class="calc-item-val">${(kg/60).toFixed(2)}</span><span class="calc-item-unit">sacas</span></div>`;}
-  else if(tipo==='coco'){
-    const arr=(kg/30).toFixed(2), renda=parseFloat(document.getElementById('f-renda')?.value)||0;
-    const prev=renda>0?((kg*renda/100)/60).toFixed(2):null;
-    html=`<div class="calc-item"><span class="calc-item-lbl">Arrobas (30kg)</span><span class="calc-item-val">${arr}</span><span class="calc-item-unit">arrobas</span></div>`;
-    if(prev)html+=`<div class="calc-item" style="border-left:2px solid var(--cafe-light);padding-left:1rem"><span class="calc-item-lbl">Previsão sacas benef.</span><span class="calc-item-val">${prev}</span><span class="calc-item-unit">sacas · renda ${renda}%</span></div>`;
+// Busca qualquer foto do OneDrive pelo path salvo no Excel
+// Usada pelo modal E pelo gerador de laudo — mesma lógica, uma só função
+async function buscarFotoOneDrive(path) {
+  if(!path || !msToken) { console.log('[buscarFoto] Sem path ou token.'); return null; }
+  try {
+    const pathEnc = path.split('/').map(p => encodeURIComponent(p)).join('/');
+    const url = `https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}:/content`;
+    console.log('[buscarFoto] GET', url);
+    const r = await fetch(url, {headers:{Authorization:'Bearer '+msToken}});
+    console.log('[buscarFoto] Status:', r.status);
+    if(!r.ok) { const e = await r.json().catch(()=>{}); console.warn('[buscarFoto] Erro:', e); return null; }
+    const blob = await r.blob();
+    return await new Promise(res => {
+      const fr = new FileReader();
+      fr.onload = e => res(e.target.result);
+      fr.readAsDataURL(blob);
+    });
+  } catch(e) {
+    console.warn('[buscarFoto] Exceção:', path, e);
+    return null;
   }
-  if(itens)itens.innerHTML=html;
-}
-function calcImpTotal(){
-  const pau=parseFloat(document.getElementById('f-imp-pau')?.value)||0, pedra=parseFloat(document.getElementById('f-imp-pedra')?.value)||0, casca=parseFloat(document.getElementById('f-imp-casca')?.value)||0;
-  const total=pau+pedra+casca;
-  const el=document.getElementById('imp-total-display'); if(el)el.textContent=total.toFixed(2).replace('.',',')+' %';
-  const aprov=parseFloat(document.getElementById('f-aprov')?.value)||0, fundo=parseFloat(document.getElementById('f-penfundo-e')?.value)||0;
-  const soma=aprov+fundo+total;
-  const sd=document.getElementById('soma-total-display'), sb=document.getElementById('soma-barra');
-  if(sd){sd.textContent=soma.toFixed(2).replace('.',',')+' %'; sd.style.color=Math.abs(soma-100)<0.1?'#2E7D32':soma>100?'#C62828':'var(--text-mid)';}
-  if(sb){sb.style.width=Math.min(soma,100)+'%'; sb.style.background=Math.abs(soma-100)<0.1?'#4CAF50':soma>100?'#E53935':'var(--cafe-light)';}
-}
-function previewFoto(ev,prevId,iconId,hintId){
-  const f=ev.target.files[0]; if(!f)return;
-  const r=new FileReader();
-  r.onload=e=>{document.getElementById(prevId).src=e.target.result;document.getElementById(prevId).style.display='block';document.getElementById(iconId).style.display='none';document.getElementById(hintId).style.display='none';if(prevId==='prev-bc')fotoBC=e.target.result;else fotoE=e.target.result;};
-  r.readAsDataURL(f);
-}
-function getDefeitos(){
-  const lbls=['Preto','Verde','Ardido','Brocado','Concha','Marinheiro','Palha/Pau','Coco'], r={};
-  document.querySelectorAll('#def-bc .defeito-item input').forEach((i,idx)=>{if(i.value>0)r[lbls[idx]]=parseInt(i.value);});
-  return r;
-}
-async function salvarClassificacao(){
-  if(!clf){alert('Selecione o classificador.');return;}
-  if(tipo==='escolha'){
-    const aprov=parseFloat(document.getElementById('f-aprov').value)||0, fundo=parseFloat(document.getElementById('f-penfundo-e').value)||0;
-    const pau=parseFloat(document.getElementById('f-imp-pau').value)||0, pedra=parseFloat(document.getElementById('f-imp-pedra').value)||0, casca=parseFloat(document.getElementById('f-imp-casca').value)||0;
-    const soma=aprov+fundo+pau+pedra+casca;
-    if((aprov>0||fundo>0||pau>0||pedra>0||casca>0)&&Math.abs(soma-100)>0.1){toastErr('Verificar classificação: soma = '+soma.toFixed(2)+'% (deve ser 100%)');return;}
-  }
-  if(!tipo){alert('Selecione o tipo de café.');return;}
-  if(!document.getElementById('f-produtor').value){alert('Informe o produtor/fazenda.');return;}
-  if(!msToken){toastErr('Sem conexão com Microsoft. Conecte antes de salvar.');return;}
-  const kg=parseFloat(document.getElementById('f-kg').value)||0;
-  const sacasCalc=tipo!=='coco'?(kg/60):0, arrobasCalc=tipo==='coco'?(kg/30):0;
-  const rendaVal=parseFloat(document.getElementById('f-renda')?.value)||0;
-  const prevSacasCalc=tipo==='coco'&&rendaVal>0?((kg*rendaVal/100)/60):0;
-  const base={id:Date.now(),data:document.getElementById('f-data').value,lote:document.getElementById('f-lote').value,produtor:document.getElementById('f-produtor').value,kg,sacas:tipo!=='coco'?sacasCalc.toFixed(2):arrobasCalc.toFixed(2),arrobas:arrobasCalc>0?arrobasCalc.toFixed(2):'',prevSacas:prevSacasCalc>0?prevSacasCalc.toFixed(2):'',tipo,clf,sinc:false};
-  const extra=tipo!=='escolha'?{catacao:document.getElementById('f-catacao').value,impureza:document.getElementById('f-impureza').value,umidade:document.getElementById('f-umidade').value,pen17:document.getElementById('f-pen17').value,penfundo:document.getElementById('f-penfundo').value,renda:tipo==='coco'?document.getElementById('f-renda').value:'',bebida:bebStr(selbBC),bebidaObs:document.getElementById('f-bobs-bc').value,defeitos:getDefeitos(),obs:document.getElementById('f-obs-bc').value,foto:fotoBC}:{aprov:document.getElementById('f-aprov').value,penfundo:document.getElementById('f-penfundo-e').value,impPau:document.getElementById('f-imp-pau').value,impPedra:document.getElementById('f-imp-pedra').value,impCasca:document.getElementById('f-imp-casca').value,bebida:bebStr(selbE),bebidaObs:document.getElementById('f-bobs-e').value,obs:document.getElementById('f-obs-e').value,foto:fotoE};
-  const reg={...base,...extra};
-  dadosClf.unshift(reg); salvarClfLocal(); updateClfBadge(); toastOk('Classificação salva! Sincronizando...'); resetClfForm();
-  await sincClfReg(reg);
-}
-function resetClfForm(){
-  clf='';tipo='';selbBC={};selbE={};fotoBC=null;fotoE=null;
-  document.querySelectorAll('.clf-btn,.tipo-card').forEach(el=>el.classList.remove('selected'));
-  document.getElementById('form-bc').style.display='none'; document.getElementById('form-e').style.display='none'; document.getElementById('btn-salvar-row').style.display='none';
-  const cv=document.getElementById('calc-volume');if(cv)cv.style.display='none';
-  ['f-lote','f-produtor','f-kg','f-catacao','f-impureza','f-umidade','f-pen17','f-penfundo','f-renda','f-bobs-bc','f-obs-bc','f-aprov','f-penfundo-e','f-imp-pau','f-imp-pedra','f-imp-casca','f-bobs-e','f-obs-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.querySelectorAll('.defeito-item input').forEach(i=>i.value='');
-  buildBebidas('bc'); buildBebidas('e');
-  document.getElementById('xic-bc').innerHTML=''; document.getElementById('xic-e').innerHTML='';
-  ['prev-bc','prev-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-  ['icon-bc','icon-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='block';});
-  ['hint-bc','hint-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='block';});
-}
-function renderClfHist(){
-  const c=document.getElementById('clf-hist-container');
-  if(!dadosClf.length){c.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação este mês.</p></div>';return;}
-  c.innerHTML='<div class="hist-list">'+[...dadosClf].sort((a,b)=>b.id-a.id).map(r=>{
-    const tc=r.tipo==='beneficiado'?'tag-b':r.tipo==='coco'?'tag-c':'tag-e';
-    const tl=r.tipo==='beneficiado'?'Beneficiado':r.tipo==='coco'?'Em Coco':'Escolha';
-    const df=r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-    return `<div class="hist-item" style="grid-template-columns:74px 1fr auto auto" onclick="verClfDetalhe(${r.id})"><div class="hi-data">${df}</div><div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div><div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="tag ${tc}">${tl}</span><span style="font-size:10px">${r.sinc?'🟢':'🟡'}</span></div></div>`;
-  }).join('')+'</div>';
-}
-function verClfDetalhe(id){
-  const c=dadosClf.find(x=>x.id===id);if(!c)return;
-  clfItemId=id;
-  const tl=c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
-  const df=c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-  document.getElementById('clf-modal-title').textContent=c.produtor||'Classificação';
-  let rows=[['Data',df],['Classificador',c.clf||'—'],['Lote/NF',c.lote||'—']];
-  if(c.kg)rows.push(['Quantidade',c.kg+' kg']);
-  if(c.tipo==='coco'){if(c.sacas)rows.push(['Arrobas',c.sacas+' @']);if(c.prevSacas)rows.push(['Prev. Sacas Benef.',c.prevSacas+' sc']);}
-  else{if(c.sacas)rows.push(['Sacas',c.sacas+' sc']);}
-  rows.push(['Tipo',tl]);
-  if(c.tipo!=='escolha'){if(c.catacao)rows.push(['% Catação',c.catacao+'%']);if(c.impureza)rows.push(['% Impureza',c.impureza+'%']);if(c.umidade)rows.push(['Umidade',c.umidade+'%']);if(c.pen17)rows.push(['Peneira 17+',c.pen17+'%']);if(c.penfundo)rows.push(['Peneira Fundo',c.penfundo+'%']);if(c.renda)rows.push(['Renda',c.renda+'%']);if(c.bebida)rows.push(['Bebida',c.bebida]);if(c.bebidaObs)rows.push(['Obs. Bebida',c.bebidaObs]);if(c.defeitos&&Object.keys(c.defeitos).length)rows.push(['Defeitos',Object.entries(c.defeitos).map(([k,v])=>k+': '+v).join(', ')]);}
-  else{if(c.aprov)rows.push(['% Aproveitamento',c.aprov+'%']);if(c.penfundo)rows.push(['Peneira Fundo',c.penfundo+'%']);const imp=((parseFloat(c.impPau)||0)+(parseFloat(c.impPedra)||0)+(parseFloat(c.impCasca)||0)).toFixed(2);if(parseFloat(imp)>0)rows.push(['Impureza Total',imp+'%']);if(c.bebida)rows.push(['Bebida',c.bebida]);}
-  if(c.obs)rows.push(['Observações',c.obs]);
-  rows.push(['Status',c.sinc?'Sincronizado ✓':'Pendente sincronização']);
-  document.getElementById('clf-modal-body').innerHTML=rows.map(([k,v])=>`<div class="modal-row"><span>${k}</span><span>${v}</span></div>`).join('');
-  document.getElementById('clf-btn-sinc').style.display=(!c.sinc&&msToken)?'block':'none';
-  document.getElementById('clf-share-section').style.display='block';
-  const mf=document.getElementById('clf-modal-foto'); mf.style.display='none';
-  document.getElementById('clf-modal').classList.add('open');
-  carregarFotoModal(c);
-}
-function closeClfModal(){document.getElementById('clf-modal').classList.remove('open');}
-async function sincClfItem(){const r=dadosClf.find(x=>x.id===clfItemId);if(!r)return;closeClfModal();await sincClfReg(r);renderClfHist();}
-
-async function carregarClfOneDrive(){
-  if(!msToken)return;
-  setSinc('clf','pending','Carregando...');
-  const ld=document.getElementById('clf-hist-loading'), cn=document.getElementById('clf-hist-container');
-  if(ld){ld.style.display='block';if(cn)cn.style.display='none';}
-  try{
-    const h=new Date(), ano=h.getFullYear(), mes=MESES[h.getMonth()];
-    const raiz=clfOdPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const nomeArq=`Classificacoes_${ano}.xlsx`;
-    const pathEnc=`${raiz}/${nomeArq}`.split('/').map(p=>encodeURIComponent(p)).join('/');
-    const checkR=await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!checkR.ok){setSinc('clf','ok','Conectado');return;}
-    const fd=await checkR.json(), fid=fd.id;
-    const meta=await (await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}?select=name,size,file`,{headers:{Authorization:'Bearer '+msToken}})).json();
-    if(!meta.file||meta.size<1000){setSinc('clf','ok','Conectado');return;}
-    const abasR=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!abasR.ok){setSinc('clf','ok','Conectado');return;}
-    const abas=(await abasR.json()).value.map(s=>s.name);
-    if(!abas.includes(mes)){setSinc('clf','ok','Conectado');return;}
-    const rr=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!rr.ok){setSinc('clf','ok','Conectado');return;}
-    const rows=(await rr.json()).values||[];
-    if(rows.length<=1){setSinc('clf','ok','Conectado');return;}
-    const novos=[];
-    for(let i=1;i<rows.length;i++){
-      const r=rows[i]; if(!r[3])continue;
-      const partes=r[0]?String(r[0]).split('/'):[];
-      const dataISO=partes.length===3?`${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`:'';
-      const defObj={};if(r[14])String(r[14]).split('|').forEach(p=>{const[k,v]=p.trim().split(':');if(k&&v)defObj[k.trim()]=parseInt(v)||0;});
-      const isNovo=r[6]&&['Beneficiado','Em Coco','Escolha'].includes(r[6]);
-      novos.push({id:Date.now()+i*7,data:dataISO,clf:r[1]||'',lote:r[2]||'',produtor:r[3]||'',kg:isNovo?(r[4]||''):'',sacas:isNovo?(r[5]||''):(r[4]||''),tipo:isNovo?(r[6]==='Beneficiado'?'beneficiado':r[6]==='Em Coco'?'coco':'escolha'):(r[5]==='Beneficiado'?'beneficiado':r[5]==='Em Coco'?'coco':'escolha'),catacao:isNovo?(r[7]||''):(r[6]||''),impureza:isNovo?(r[8]||''):(r[7]||''),umidade:isNovo?(r[9]||''):(r[8]||''),pen17:isNovo?(r[10]||''):(r[9]||''),penfundo:isNovo?(r[11]||''):(r[10]||''),renda:isNovo?(r[12]||''):(r[11]||''),bebida:isNovo?(r[13]||''):(r[12]||''),bebidaObs:isNovo?(r[14]||''):(r[13]||''),defeitos:defObj,aprov:isNovo?(r[16]||''):(r[15]||''),impPau:isNovo?(r[18]||''):(r[17]||''),impPedra:isNovo?(r[19]||''):(r[18]||''),impCasca:isNovo?(r[20]||''):(r[19]||''),obs:isNovo?(r[21]||''):(r[20]||''),fotoUrl:isNovo?(r[22]||''):(r[21]||''),fotoPath:isNovo?(r[22]||''):(r[21]||''),arrobas:isNovo?(r[23]||''):'',prevSacas:isNovo?(r[24]||''):'',sinc:true,fromCloud:true});
-    }
-    if(novos.length>0){
-      const chave=d=>`${d.lote}|${d.produtor}|${d.data}`;
-      const cCloud=new Set(novos.map(chave));
-      dadosClf=[...dadosClf.filter(d=>!d.sinc&&!cCloud.has(chave(d))),...novos];
-      salvarClfLocal(); updateClfBadge();
-    }
-    setSinc('clf','ok','Sincronizado'); toastOk(novos.length+' classificações carregadas.');
-  }catch(e){setSinc('clf','ok','Conectado');toastErr('Erro ao carregar: '+(e.message||''));}
-  finally{if(ld)ld.style.display='none';if(cn)cn.style.display='block';renderClfHist();}
 }
 
-async function sincClfReg(reg){
-  setSinc('clf','pending','Sincronizando...');
-  try{
-    const testR=await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+msToken}});
-    if(!testR.ok){localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(TOKEN_EXP_KEY);msToken=null;setDesconectado('clf');throw new Error('Sessão expirada. Reconecte.');}
-    let fotoUrl='';
-    if(reg.foto){try{fotoUrl=await uploadClfFoto(reg);}catch(e){console.warn('Foto falhou:',e.message);}}
-    await appendClfExcel(reg,fotoUrl);
-    reg.sinc=true;reg.fotoUrl=fotoUrl;salvarClfLocal();setSinc('clf','ok','Sincronizado');toastOk('Sincronizado com OneDrive!');
-  }catch(e){setSinc('clf','error','Erro');toastErr('Erro: '+(e.message||''));}
+// Exibe a foto no modal — usa base64 local se disponível, senão busca no OneDrive
+async function carregarFotoModal(reg) {
+  const fi = document.getElementById('modal-foto');
+  fi.style.display = 'none';
+  // 1. Base64 local — instantâneo
+  if(reg.foto) { fi.src = reg.foto; fi.style.display = 'block'; return; }
+  // 2. Path salvo — busca no OneDrive
+  const path = reg.fotoPath || reg.fotoUrl || '';
+  console.log('[Foto] fotoPath:', reg.fotoPath, '| fotoUrl:', reg.fotoUrl, '| path usado:', path);
+  if(!path) { console.log('[Foto] Sem path disponível.'); return; }
+  const src = await buscarFotoOneDrive(path);
+  if(src) { fi.src = src; fi.style.display = 'block'; }
+  else { console.log('[Foto] buscarFotoOneDrive retornou null para:', path); }
 }
-async function uploadClfFoto(reg){
-  const d=new Date(reg.data+'T12:00:00'), sub=MESES[d.getMonth()]+' '+d.getFullYear();
-  const np=(reg.produtor||'sem').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_-]/g,'');
-  const nome=`foto_${np}_${reg.data}_${reg.id}.jpg`;
-  const raiz=clfOdPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const subN=sub.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const path=`${raiz}/Fotos/${subN}/${nome}`;
-  const blob=b64toBlob(reg.foto);
-  const r=await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${path.split('/').map(p=>encodeURIComponent(p)).join('/')}:/content`,{method:'PUT',headers:{Authorization:'Bearer '+msToken,'Content-Type':'image/jpeg'},body:blob});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error('Falha upload foto: '+(e.error?.message||r.status));}
-  reg.fotoPath=path; return path;
-}
-async function buscarFotoOneDrive(path){
-  if(!path||!msToken)return null;
-  try{const r=await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${path.split('/').map(p=>encodeURIComponent(p)).join('/')}:/content`,{headers:{Authorization:'Bearer '+msToken}});if(!r.ok)return null;const blob=await r.blob();return await new Promise(res=>{const fr=new FileReader();fr.onload=e=>res(e.target.result);fr.readAsDataURL(blob);});}catch(e){return null;}
-}
-async function carregarFotoModal(reg){
-  const fi=document.getElementById('clf-modal-foto');fi.style.display='none';
-  if(reg.foto){fi.src=reg.foto;fi.style.display='block';return;}
-  const path=reg.fotoPath||reg.fotoUrl||'';if(!path)return;
-  const src=await buscarFotoOneDrive(path);if(src){fi.src=src;fi.style.display='block';}
-}
-async function appendClfExcel(reg,fotoUrl){
-  const d=new Date(reg.data+'T12:00:00'), ano=d.getFullYear(), mes=MESES[d.getMonth()];
-  const nomeArq=`Classificacoes_${ano}.xlsx`;
-  const raiz=clfOdPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const fid=await getOrCreateExcel(`${raiz}/${nomeArq}`,mes);
-  await garantirAba(fid,mes,'clf');
-  const tl=reg.tipo==='beneficiado'?'Beneficiado':reg.tipo==='coco'?'Em Coco':'Escolha';
-  const df=d.toLocaleDateString('pt-BR');
-  const def=reg.defeitos?Object.entries(reg.defeitos).map(([k,v])=>k+':'+v).join(' | '):'';
-  const impT=reg.tipo==='escolha'?((parseFloat(reg.impPau)||0)+(parseFloat(reg.impPedra)||0)+(parseFloat(reg.impCasca)||0)).toFixed(2):'';
-  const linha=[df,reg.clf||'',reg.lote||'',reg.produtor||'',reg.kg||'',reg.sacas||'',tl,reg.catacao||'',reg.impureza||'',reg.umidade||'',reg.pen17||'',reg.penfundo||'',reg.renda||'',reg.bebida||'',reg.bebidaObs||'',def,reg.aprov||'',impT||'',reg.impPau||'',reg.impPedra||'',reg.impCasca||'',reg.obs||'',fotoUrl,reg.arrobas||'',reg.prevSacas||''];
-  const hdrs={'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+
+async function appendExcel(reg, fotoUrl) {
+  const d = new Date(reg.data+'T12:00:00');
+  const ano = d.getFullYear(), mes = MESES[d.getMonth()];
+  const nomeArq = `Classificacoes_${ano}.xlsx`;
+  const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const pathArq = `${pastaRaiz}/${nomeArq}`;
+  let fileId = await getOrCreateExcel(pathArq, mes);
+  await garantirAba(fileId, mes);
+  const tl = reg.tipo==='beneficiado'?'Beneficiado':reg.tipo==='coco'?'Em Coco':'Escolha';
+  const df = d.toLocaleDateString('pt-BR');
+  const def = reg.defeitos ? Object.entries(reg.defeitos).map(([k,v])=>k+':'+v).join(' | ') : '';
+  const impTotal = reg.tipo==='escolha' ? (
+    (parseFloat(reg.impPau)||0) + (parseFloat(reg.impPedra)||0) + (parseFloat(reg.impCasca)||0)
+  ).toFixed(2) : '';
+  const linha = [
+    df, reg.clf||'', reg.lote||'', reg.produtor||'', reg.kg||'', reg.sacas||'', tl,
+    reg.catacao||'', reg.impureza||'', reg.umidade||'', reg.pen17||'', reg.penfundo||'',
+    reg.renda||'', reg.bebida||'', reg.bebidaObs||'', def,
+    reg.aprov||'', impTotal||'', reg.impPau||'', reg.impPedra||'', reg.impCasca||'',
+    reg.obs||'', fotoUrl,
+    reg.arrobas||'', reg.prevSacas||''
+  ];
+  const apiHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
   await new Promise(r=>setTimeout(r,1000));
-  const ur=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,{headers:hdrs});
-  if(!ur.ok){const e=await ur.json().catch(()=>({}));throw new Error('Erro usedRange: '+ur.status);}
-  const next=(await ur.json()).rowCount+1;
-  const wr=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${next}:Y${next}')`,{method:'PATCH',headers:hdrs,body:JSON.stringify({values:[linha]})});
-  if(!wr.ok){const e=await wr.json().catch(()=>({}));throw new Error('Erro ao escrever linha: '+wr.status);}
+  const usedResp = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,
+    {headers:apiHdrs}
+  );
+  if(!usedResp.ok) {
+    const e = await usedResp.json().catch(()=>({}));
+    throw new Error('Erro ao ler usedRange: '+usedResp.status+' — '+(e.error?.message||''));
+  }
+  const usedData = await usedResp.json();
+  const nextRow = (usedData.rowCount||1) + 1;
+  console.log('Inserindo linha na linha:', nextRow);
+  const writeResp = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:Y${nextRow}')`,
+    {method:'PATCH', headers:apiHdrs, body:JSON.stringify({values:[linha]})}
+  );
+  if(!writeResp.ok) {
+    const e = await writeResp.json().catch(()=>({}));
+    throw new Error('Erro ao escrever linha: '+writeResp.status+' — '+(e.error?.message||''));
+  }
+  console.log('Linha salva com sucesso!');
 }
 
-// ===================== FRETES =====================
-let dadosFrt = [], dadosPropriedades = [], frtItemId = null;
-let frtClientId = localStorage.getItem('cafe_client_id') || CLIENT_ID;
-let frtTenantId = localStorage.getItem('cafe_tenant_id') || TENANT_ID;
-let frtOdPath = localStorage.getItem('frt_od_path') || 'Fretes';
+async function getOrCreateExcel(path, mes) {
+  const pathEnc = path.split('/').map(p => encodeURIComponent(p)).join('/');
+  const checkR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}`,{headers:{Authorization:'Bearer '+msToken}});
+  if(checkR.ok) { const d=await checkR.json(); return d.id; }
 
-function initFrt(){
-  const h=new Date(), pad=n=>String(n).padStart(2,'0');
-  document.getElementById('frt-data').value=`${h.getFullYear()}-${pad(h.getMonth()+1)}-${pad(h.getDate())}`;
-  document.getElementById('frt-hora').value='07:00';
-  document.getElementById('frt-header-date').textContent=h.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('frt-hist-mes').textContent=MESES[h.getMonth()]+' '+h.getFullYear();
-  document.getElementById('frt-cfg-client').value=frtClientId;
-  document.getElementById('frt-cfg-tenant').value=frtTenantId;
-  document.getElementById('frt-cfg-path').value=frtOdPath;
-  try{const k=`frt_${h.getFullYear()}_${h.getMonth()}`;dadosFrt=JSON.parse(localStorage.getItem(k)||'[]');}catch(e){dadosFrt=[];}
-  try{dadosPropriedades=JSON.parse(localStorage.getItem('frt_propriedades')||'[]');}catch(e){dadosPropriedades=[];}
-  updateFrtBadge(); renderPropSelect(); renderPropLista();
-}
-function showFrtScreen(n,btn){
-  document.querySelectorAll('#app-fretes .screen').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('#app-fretes .nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('frt-screen-'+n).classList.add('active');
-  if(btn)btn.classList.add('active');
-  if(n==='historico'){renderFrtHist();if(msToken)carregarFrtOneDrive().catch(()=>{});}
-  if(n==='propriedades'){renderPropLista();if(msToken)carregarPropriedadesOneDrive().catch(()=>{});}
-}
-function updateFrtBadge(){
-  document.getElementById('frt-badge').textContent=dadosFrt.length;
-  document.getElementById('frt-badge-prop').textContent=dadosPropriedades.length;
-}
-function salvarFrtLocal(){const h=new Date(),k=`frt_${h.getFullYear()}_${h.getMonth()}`;try{localStorage.setItem(k,JSON.stringify(dadosFrt));}catch(e){}}
-function salvarPropsLocal(){try{localStorage.setItem('frt_propriedades',JSON.stringify(dadosPropriedades));}catch(e){}}
-function salvarFrtCfg(){frtClientId=document.getElementById('frt-cfg-client').value.trim();frtTenantId=document.getElementById('frt-cfg-tenant').value.trim();localStorage.setItem('cafe_client_id',frtClientId);localStorage.setItem('cafe_tenant_id',frtTenantId);toastOk('Configuração salva!');}
-function salvarFrtPath(){frtOdPath=document.getElementById('frt-cfg-path').value.trim()||'Fretes';localStorage.setItem('frt_od_path',frtOdPath);toastOk('Pasta salva!');}
+  // Criar Excel válido usando bytes de um .xlsx mínimo real (formato OOXML)
+  const xlsxB64 = 'UEsDBBQAAAAIALONdFy5mqGQAQEAADsCAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbK1RyU7DMBC99yssX6vYKQeEUJIeWI7AoXzA4EwSK97kcUv69zgpi4Qo4sBpNHqrZqrtZA07YCTtXc03ouQMnfKtdn3Nn3f3xRVnlMC1YLzDmh+R+LZZVbtjQGJZ7KjmQ0rhWkpSA1og4QO6jHQ+Wkh5jb0MoEboUV6U5aVU3iV0qUizB29WjFW32MHeJHY3ZeTUJaIhzm5O3Dmu5hCC0QpSxuXBtd+CivcQkZULhwYdaJ0JXJ4LmcHzGV/Sx3yiqFtkTxDTA9hMlJORrz6OL96P4nefH7r6rtMKW6/2NksEhYjQ0oCYrBHLFBa0W/+pwsInuYzNP3f59P+oUsnl980bUEsDBBQAAAAIALONdFxdh/QutAAAACwBAAALAAAAX3JlbHMvLnJlbHONz78OgjAQBvCdp2hul4KDMYbCYkxYDT5ALcefUHpNWxXe3o5iHBwvd9/v8hXVMmv2ROdHMgLyNAOGRlE7ml7ArbnsjsB8kKaVmgwKWNFDVSbFFbUMMeOH0XoWEeMFDCHYE+deDThLn5JFEzcduVmGOLqeW6km2SPfZ9mBu08DyoSxDcvqVoCr2xxYs1r8h6euGxWeST1mNOHHl6+LKEvXYxCwaP4iN92JpjSiwGNHvilZvgFQSwMEFAAAAAgAs410XFkhbT3DAAAAKgEAAA8AAAB4bC93b3JrYm9vay54bWyNj71uwzAMhPc8hcA9kd2hKAzbWYICmds+gGrRsRCLNEilP29fOoH3TjyCuI937fEnz+4LRRNTB/WhAoc0cEx06eDj/XX/Ak5LoBhmJuzgFxWO/a79Zrl+Ml+d+Uk7mEpZGu91mDAHPfCCZJeRJYdiq1y8LoIh6oRY8uyfqurZ55AIdu7BaOQ/FB7HNOCJh1tGKg+M4ByK5dcpLQq9Adv7G13ltjgK2fK/rbq2Tus8R6sMTppkQs6xBn93+83e+q1n/wdQSwMEFAAAAAgAs410XPVgA4K3AAAALQEAABoAAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc43PzQrCMAwH8PueouTusnkQkXW7iLCrzAcoXfaBW1ua+rG3t3gQBx48hSTkF/5F9ZwncSfPozUS8jQDQUbbdjS9hEtz2uxBcFCmVZM1JGEhhqpMijNNKsQbHkbHIiKGJQwhuAMi64Fmxal1ZOKms35WIba+R6f0VfWE2yzbof82oEyEWLGibiX4us1BNIujf3jbdaOmo9W3mUz48QUf1l95IAoRVb6nIOEzYnyXPI0qYAyJq5TlC1BLAwQUAAAACACzjXRch5PdQocAAAChAAAAGAAAAHhsL3dvcmtzaGVldHMvc2hlZXQxLnhtbD3MSw7CMAwE0H1PEXlPXVgghJJ2gzgBHMBqTFvROFEc8bk9URcsZ0bz7PAJq3lx1iWKg33bgWEZo19kcnC/XXcnMFpIPK1R2MGXFYa+se+YnzozF1MBUQdzKemMqOPMgbSNiaUuj5gDlRrzhJoyk99OYcVD1x0x0CLQN8bYrb5QIaw4/vX+B1BLAQIUAxQAAAAIALONdFy5mqGQAQEAADsCAAATAAAAAAAAAAAAAACAAQAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQDFAAAAAgAs410XF2H9C60AAAALAEAAAsAAAAAAAAAAAAAAIABMgEAAF9yZWxzLy5yZWxzUEsBAhQDFAAAAAgAs410XFkhbT3DAAAAKgEAAA8AAAAAAAAAAAAAAIABDwIAAHhsL3dvcmtib29rLnhtbFBLAQIUAxQAAAAIALONdFz1YAOCtwAAAC0BAAAaAAAAAAAAAAAAAACAAf8CAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc1BLAQIUAxQAAAAIALONdFyHk91ChwAAAKEAAAAYAAAAAAAAAAAAAACAAe4DAAB4bC93b3Jrc2hlZXRzL3NoZWV0MS54bWxQSwUGAAAAAAUABQBFAQAAqwQAAAAA';
+  
+  function b64toAbXlsx(b64) {
+    const bin = atob(b64), buf = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+    return buf.buffer;
+  }
 
-function calcPesoFrete(){
-  const sc=parseInt(document.getElementById('frt-sacas').value)||0;
-  document.getElementById('frt-peso').value=sc*60;
-}
-
-// PROPRIEDADES
-function renderPropSelect(){
-  const sel=document.getElementById('frt-prop-sel');
-  sel.innerHTML='<option value="">— Selecione ou cadastre nova —</option>'+dadosPropriedades.map((p,i)=>`<option value="${i}">${p.nome} — ${p.produtor}</option>`).join('');
-}
-function selecionarPropFrete(){
-  const idx=parseInt(document.getElementById('frt-prop-sel').value);
-  const box=document.getElementById('frt-prop-info');
-  if(isNaN(idx)){box.style.display='none';return;}
-  const p=dadosPropriedades[idx];
-  document.getElementById('frt-produtor').value=p.produtor||'';
-  document.getElementById('frt-municipio').value=p.municipio||'';
-  const temGPS=p.lat&&p.lng;
-  box.style.display='block';
-  box.innerHTML=`<div class="gps-box ${temGPS?'':'gps-box-semgps'}" style="margin-bottom:12px">
-    ${temGPS
-      ? `<div><div style="font-size:13px;font-weight:500;color:#2E7D32">📍 ${p.nome}</div><div class="gps-coords">${p.lat}, ${p.lng}</div></div>
-         <a href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving" target="_blank" class="btn-small btn-blue-map">🗺️ Abrir Rota</a>`
-      : `<div style="font-size:13px;color:#E65100">⚠️ ${p.nome} — sem GPS cadastrado</div>`
-    }
-  </div>`;
-}
-function renderPropLista(){
-  const c=document.getElementById('prop-lista-container');
-  if(!dadosPropriedades.length){c.innerHTML='<div class="empty"><div class="empty-icon">📍</div><p>Nenhuma propriedade cadastrada.</p></div>';return;}
-  c.innerHTML='<div class="hist-list">'+dadosPropriedades.map((p,i)=>{
-    const temGPS=p.lat&&p.lng;
-    return `<div class="hist-item" style="grid-template-columns:1fr auto">
-      <div>
-        <div class="hi-produtor">${p.nome}</div>
-        <div class="hi-sub">👤 ${p.produtor||'—'} · 🏙️ ${p.municipio||'—'}</div>
-        ${p.obs?`<div style="font-size:12px;color:var(--text-light);margin-top:3px">📝 ${p.obs}</div>`:''}
-        ${temGPS?`<div style="font-family:monospace;font-size:11px;color:#2E7D32;margin-top:4px">📡 ${p.lat}, ${p.lng}</div>`:'<div style="font-size:11px;color:#E65100;margin-top:4px">⚠️ Sem GPS cadastrado</div>'}
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-        ${temGPS?`<a href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving" target="_blank" class="btn-small btn-blue-map" style="text-decoration:none;border-radius:8px;padding:7px 12px;font-size:12px">🗺️ Rota GPS</a>`:''}
-        ${temGPS?`<a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" class="btn-small" style="background:var(--cream-dark);color:var(--text-mid);text-decoration:none;border-radius:8px;padding:7px 12px;font-size:12px;border:0.5px solid var(--border-mid)">👁 Ver no mapa</a>`:''}
-        <button class="btn-small btn-orange" style="font-size:12px" onclick="excluirProp(${i})">🗑 Excluir</button>
-      </div>
-    </div>`;
-  }).join('')+'</div>';
-}
-
-function abrirModalProp(){
-  ['prop-nome','prop-produtor','prop-municipio','prop-telefone','prop-lat','prop-lng','prop-obs'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  document.getElementById('gps-preview-box').style.display='none';
-  document.getElementById('prop-modal').classList.add('open');
-}
-function closePropModal(){document.getElementById('prop-modal').classList.remove('open');}
-function obterGPSAtual(){
-  if(!navigator.geolocation){toastErr('Geolocalização não disponível.');return;}
-  toastOk('Obtendo localização...');
-  navigator.geolocation.getCurrentPosition(pos=>{
-    document.getElementById('prop-lat').value=pos.coords.latitude.toFixed(6);
-    document.getElementById('prop-lng').value=pos.coords.longitude.toFixed(6);
-    previewGPS(); toastOk('Localização obtida!');
-  },()=>toastErr('Não foi possível obter a localização.'));
-}
-function previewGPS(){
-  const lat=document.getElementById('prop-lat').value.trim(), lng=document.getElementById('prop-lng').value.trim();
-  const box=document.getElementById('gps-preview-box');
-  if(lat&&lng&&!isNaN(lat)&&!isNaN(lng)){
-    box.style.display='block';
-    box.innerHTML=`<div class="gps-box"><div><div style="font-size:12px;font-weight:500;color:#2E7D32">✅ Coordenadas válidas</div><div class="gps-coords">${lat}, ${lng}</div></div><a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" class="btn-small btn-blue-map" style="text-decoration:none;border-radius:8px;padding:7px 12px;font-size:12px">👁 Visualizar</a></div>`;
-  }else{box.style.display='none';}
-}
-
-async function salvarPropriedade(){
-  const nome=document.getElementById('prop-nome').value.trim();
-  const produtor=document.getElementById('prop-produtor').value.trim();
-  if(!nome||!produtor){alert('Informe o nome da propriedade e o produtor.');return;}
-  const prop={id:Date.now(),nome,produtor,municipio:document.getElementById('prop-municipio').value,telefone:document.getElementById('prop-telefone').value,lat:document.getElementById('prop-lat').value.trim(),lng:document.getElementById('prop-lng').value.trim(),obs:document.getElementById('prop-obs').value,sinc:false};
-  dadosPropriedades.push(prop); salvarPropsLocal(); updateFrtBadge(); renderPropSelect(); renderPropLista();
-  closePropModal(); toastOk('Propriedade salva! Sincronizando...');
-  if(msToken) await sincPropriedade(prop);
-}
-function excluirProp(i){if(!confirm('Excluir esta propriedade?'))return;dadosPropriedades.splice(i,1);salvarPropsLocal();updateFrtBadge();renderPropSelect();renderPropLista();toastOk('Propriedade excluída.');}
-
-// FRETES
-async function salvarFrete(){
-  if(!msToken){toastErr('Sem conexão com Microsoft. Conecte antes de salvar.');return;}
-  const data=document.getElementById('frt-data').value, hora=document.getElementById('frt-hora').value;
-  const produtor=document.getElementById('frt-produtor').value;
-  if(!data||!produtor){alert('Informe a data e o produtor.');return;}
-  const propIdx=parseInt(document.getElementById('frt-prop-sel').value);
-  const prop=!isNaN(propIdx)?dadosPropriedades[propIdx]:null;
-  const reg={
-    id:Date.now(), data, hora,
-    motorista:document.getElementById('frt-motorista').value,
-    veiculo:document.getElementById('frt-veiculo').value,
-    produtor, municipio:document.getElementById('frt-municipio').value,
-    propNome:prop?.nome||produtor, propLat:prop?.lat||'', propLng:prop?.lng||'',
-    tipoCafe:document.getElementById('frt-tipo-cafe').value,
-    sacas:parseInt(document.getElementById('frt-sacas').value)||0,
-    peso:parseInt(document.getElementById('frt-peso').value)||0,
-    destino:document.getElementById('frt-destino').value,
-    nf:document.getElementById('frt-nf').value,
-    km:parseInt(document.getElementById('frt-km').value)||0,
-    valor:parseFloat(document.getElementById('frt-valor').value)||0,
-    obs:document.getElementById('frt-obs').value,
-    status:'Agendado', sinc:false
-  };
-  dadosFrt.unshift(reg); salvarFrtLocal(); updateFrtBadge();
-  toastOk('Frete salvo! Sincronizando...'); resetFrtForm();
-  await sincFrete(reg);
-}
-function resetFrtForm(){
-  ['frt-produtor','frt-municipio','frt-veiculo','frt-sacas','frt-peso','frt-destino','frt-nf','frt-km','frt-valor','frt-obs'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  document.getElementById('frt-prop-sel').value='';
-  document.getElementById('frt-prop-info').style.display='none';
-  const h=new Date(),pad=n=>String(n).padStart(2,'0');
-  document.getElementById('frt-data').value=`${h.getFullYear()}-${pad(h.getMonth()+1)}-${pad(h.getDate())}`;
-  document.getElementById('frt-hora').value='07:00';
-}
-
-function renderFrtHist(){
-  const filtro=document.getElementById('frt-filtro-status')?.value||'';
-  let lista=[...dadosFrt].filter(f=>!filtro||f.status===filtro).sort((a,b)=>(b.data+b.hora).localeCompare(a.data+a.hora));
-  const c=document.getElementById('frt-hist-container');
-  if(!lista.length){c.innerHTML='<div class="empty"><div class="empty-icon">🚛</div><p>Nenhum frete encontrado.</p></div>';return;}
-  const spMap={'Agendado':'pill-ag','Em Rota':'pill-er','Concluído':'pill-co','Cancelado':'pill-ca'};
-  c.innerHTML='<div class="hist-list">'+lista.map(f=>{
-    const df=f.data?new Date(f.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-    const temGPS=f.propLat&&f.propLng;
-    return `<div class="hist-item" style="grid-template-columns:74px 1fr auto" onclick="verFrtDetalhe(${f.id})">
-      <div class="hi-data">${df}<div style="font-size:11px;margin-top:2px">${f.hora||''}</div></div>
-      <div>
-        <div class="hi-produtor">${f.propNome||f.produtor||'—'}</div>
-        <div class="hi-sub">🚛 ${f.motorista||'—'} · ${f.veiculo?'<span class="veiculo-placa">'+f.veiculo+'</span>':''}</div>
-        <div class="hi-sub">${f.tipoCafe||''} ${f.sacas?'· '+f.sacas+' sc':''} ${f.destino?'→ '+f.destino:''}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-        <span class="status-pill ${spMap[f.status]||'pill-ag'}">${f.status}</span>
-        ${temGPS?`<a href="https://www.google.com/maps/dir/?api=1&destination=${f.propLat},${f.propLng}&travelmode=driving" target="_blank" onclick="event.stopPropagation()" class="btn-small btn-blue-map" style="text-decoration:none;border-radius:7px;padding:5px 10px;font-size:11px">🗺️ Rota</a>`:''}
-        <span style="font-size:10px">${f.sinc?'🟢':'🟡'}</span>
-      </div>
-    </div>`;
-  }).join('')+'</div>';
-}
-
-function verFrtDetalhe(id){
-  const f=dadosFrt.find(x=>x.id===id); if(!f)return;
-  frtItemId=id;
-  const df=f.data?new Date(f.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-  document.getElementById('frt-modal-title').textContent=f.propNome||f.produtor||'Frete';
-  const spMap={'Agendado':'pill-ag','Em Rota':'pill-er','Concluído':'pill-co','Cancelado':'pill-ca'};
-  let rows=[['Data',df],['Horário',f.hora||'—'],['Motorista',f.motorista||'—'],['Veículo',f.veiculo||'—'],['Produtor',f.produtor||'—'],['Município',f.municipio||'—'],['Tipo de Café',f.tipoCafe||'—'],['Sacas',f.sacas?f.sacas+' sc ('+f.peso+' kg)':'—'],['Destino',f.destino||'—'],['NF/Ticket',f.nf||'—'],['Km Estimado',f.km?f.km+' km':'—'],['Valor',f.valor?'R$ '+f.valor.toFixed(2):'—']];
-  if(f.obs)rows.push(['Observações',f.obs]);
-  rows.push(['Status',f.status||'—'],['Sincronizado',f.sinc?'Sim ✓':'Pendente 🟡']);
-  const temGPS=f.propLat&&f.propLng;
-  document.getElementById('frt-modal-body').innerHTML=
-    (temGPS?`<div class="gps-box" style="margin-bottom:1rem"><div><div style="font-size:13px;font-weight:500;color:#2E7D32">📍 Localização GPS disponível</div><div class="gps-coords">${f.propLat}, ${f.propLng}</div></div><a href="https://www.google.com/maps/dir/?api=1&destination=${f.propLat},${f.propLng}&travelmode=driving" target="_blank" class="btn-small btn-blue-map" style="text-decoration:none;border-radius:8px;padding:8px 14px;font-size:13px">🗺️ Abrir Rota Google Maps</a></div>`:'')
-    +`<span class="status-pill ${spMap[f.status]||'pill-ag'}" style="margin-bottom:10px;display:inline-block">${f.status}</span>`
-    +rows.map(([k,v])=>`<div class="modal-row"><span>${k}</span><span>${v}</span></div>`).join('');
-  const actions=document.getElementById('frt-modal-actions');
-  let btns=`<button class="btn-secondary" onclick="closeFrtModal()" style="flex:1;padding:11px;font-size:13px">Fechar</button>`;
-  if(f.status==='Agendado')btns+=`<button class="btn-primary" onclick="mudarStatusFrete(${f.id},'Em Rota')" style="flex:1;padding:11px;font-size:13px;background:#1565C0">▶ Iniciar</button>`;
-  if(f.status==='Em Rota')btns+=`<button class="btn-primary" onclick="mudarStatusFrete(${f.id},'Concluído')" style="flex:1;padding:11px;font-size:13px;background:#2E7D32">✓ Concluir</button>`;
-  if(f.status!=='Cancelado'&&f.status!=='Concluído')btns+=`<button class="btn-primary" onclick="mudarStatusFrete(${f.id},'Cancelado')" style="flex:1;padding:11px;font-size:13px;background:#C62828">Cancelar</button>`;
-  actions.innerHTML=btns;
-  document.getElementById('frt-modal').classList.add('open');
-}
-function closeFrtModal(){document.getElementById('frt-modal').classList.remove('open');}
-function mudarStatusFrete(id,novoStatus){
-  const f=dadosFrt.find(x=>x.id===id);if(!f)return;
-  f.status=novoStatus; f.sinc=false; salvarFrtLocal(); closeFrtModal(); renderFrtHist();
-  toastOk('Status atualizado: '+novoStatus);
-  if(msToken)sincFrete(f).catch(()=>{});
-}
-
-// ONEDRIVE FRETES
-async function carregarFrtOneDrive(){
-  if(!msToken)return;
-  setSinc('frt','pending','Carregando...');
-  const ld=document.getElementById('frt-hist-loading'),cn=document.getElementById('frt-hist-container');
-  if(ld){ld.style.display='block';if(cn)cn.style.display='none';}
-  try{
-    const h=new Date(),ano=h.getFullYear(),mes=MESES[h.getMonth()];
-    const raiz=frtOdPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const nomeArq=`Fretes_${ano}.xlsx`;
-    const pathEnc=`${raiz}/${nomeArq}`.split('/').map(p=>encodeURIComponent(p)).join('/');
-    const checkR=await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!checkR.ok){setSinc('frt','ok','Conectado');return;}
-    const fd=await checkR.json(),fid=fd.id;
-    const meta=await(await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}?select=name,size,file`,{headers:{Authorization:'Bearer '+msToken}})).json();
-    if(!meta.file||meta.size<1000){setSinc('frt','ok','Conectado');return;}
-    const abasR=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!abasR.ok){setSinc('frt','ok','Conectado');return;}
-    const abas=(await abasR.json()).value.map(s=>s.name);
-    if(!abas.includes(mes)){setSinc('frt','ok','Conectado');return;}
-    const rr=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!rr.ok){setSinc('frt','ok','Conectado');return;}
-    const rows=(await rr.json()).values||[];
-    if(rows.length<=1){setSinc('frt','ok','Conectado');return;}
-    const novos=[];
-    for(let i=1;i<rows.length;i++){
-      const r=rows[i];if(!r[0])continue;
-      const partes=r[0]?String(r[0]).split('/'):[];
-      const dataISO=partes.length===3?`${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`:'';
-      novos.push({id:Date.now()+i*11,data:dataISO,hora:r[1]||'',motorista:r[2]||'',veiculo:r[3]||'',produtor:r[4]||'',municipio:r[5]||'',propNome:r[6]||'',propLat:r[7]||'',propLng:r[8]||'',tipoCafe:r[9]||'',sacas:parseInt(r[10])||0,peso:parseInt(r[11])||0,destino:r[12]||'',nf:r[13]||'',km:parseInt(r[14])||0,valor:parseFloat(r[15])||0,obs:r[16]||'',status:r[17]||'Concluído',sinc:true,fromCloud:true});
-    }
-    if(novos.length>0){
-      const chave=d=>`${d.data}|${d.produtor}|${d.hora}`;
-      const cc=new Set(novos.map(chave));
-      dadosFrt=[...dadosFrt.filter(d=>!d.sinc&&!cc.has(chave(d))),...novos];
-      salvarFrtLocal();updateFrtBadge();
-    }
-    setSinc('frt','ok','Sincronizado');toastOk(novos.length+' fretes carregados.');
-  }catch(e){setSinc('frt','ok','Conectado');toastErr('Erro ao carregar fretes: '+(e.message||''));}
-  finally{if(ld)ld.style.display='none';if(cn)cn.style.display='block';renderFrtHist();}
-}
-
-async function carregarPropriedadesOneDrive(){
-  if(!msToken)return;
-  try{
-    const raiz=frtOdPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const pathEnc=`${raiz}/Clientes_Propriedades.xlsx`.split('/').map(p=>encodeURIComponent(p)).join('/');
-    const checkR=await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!checkR.ok)return;
-    const fd=await checkR.json(),fid=fd.id;
-    const meta=await(await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}?select=name,size,file`,{headers:{Authorization:'Bearer '+msToken}})).json();
-    if(!meta.file||meta.size<1000)return;
-    const abasR=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!abasR.ok)return;
-    const abas=(await abasR.json()).value.map(s=>s.name);
-    const aba=abas[0];
-    const rr=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets/${encodeURIComponent(aba)}/usedRange`,{headers:{Authorization:'Bearer '+msToken}});
-    if(!rr.ok)return;
-    const rows=(await rr.json()).values||[];
-    if(rows.length<=1)return;
-    const props=[];
-    for(let i=1;i<rows.length;i++){const r=rows[i];if(!r[0])continue;props.push({id:Date.now()+i*13,nome:r[0]||'',produtor:r[1]||'',municipio:r[2]||'',telefone:r[3]||'',lat:r[4]||'',lng:r[5]||'',obs:r[6]||'',sinc:true});}
-    if(props.length>0){
-      const cc=new Set(props.map(p=>p.nome+'|'+p.produtor));
-      dadosPropriedades=[...dadosPropriedades.filter(p=>!p.sinc&&!cc.has(p.nome+'|'+p.produtor)),...props];
-      salvarPropsLocal();updateFrtBadge();renderPropSelect();renderPropLista();
-      toastOk(props.length+' propriedades carregadas.');
-    }
-  }catch(e){console.warn('Erro carregar props:',e);}
-}
-
-async function sincFrete(reg){
-  setSinc('frt','pending','Sincronizando...');
-  try{
-    const testR=await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+msToken}});
-    if(!testR.ok){localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(TOKEN_EXP_KEY);msToken=null;setDesconectado('frt');throw new Error('Sessão expirada. Reconecte.');}
-    await appendFrtExcel(reg);
-    reg.sinc=true;salvarFrtLocal();setSinc('frt','ok','Sincronizado');toastOk('Frete sincronizado com OneDrive!');
-  }catch(e){setSinc('frt','error','Erro');toastErr('Erro: '+(e.message||''));}
-}
-async function appendFrtExcel(reg){
-  const d=new Date(reg.data+'T12:00:00'),ano=d.getFullYear(),mes=MESES[d.getMonth()];
-  const nomeArq=`Fretes_${ano}.xlsx`;
-  const raiz=frtOdPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const fid=await getOrCreateExcel(`${raiz}/${nomeArq}`,mes);
-  await garantirAba(fid,mes,'frt');
-  const df=d.toLocaleDateString('pt-BR');
-  const linha=[df,reg.hora||'',reg.motorista||'',reg.veiculo||'',reg.produtor||'',reg.municipio||'',reg.propNome||'',reg.propLat||'',reg.propLng||'',reg.tipoCafe||'',reg.sacas||0,reg.peso||0,reg.destino||'',reg.nf||'',reg.km||0,reg.valor||0,reg.obs||'',reg.status||''];
-  const hdrs={'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
-  await new Promise(r=>setTimeout(r,1000));
-  const ur=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,{headers:hdrs});
-  if(!ur.ok){const e=await ur.json().catch(()=>({}));throw new Error('Erro usedRange fretes: '+ur.status);}
-  const next=(await ur.json()).rowCount+1;
-  const wr=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${next}:R${next}')`,{method:'PATCH',headers:hdrs,body:JSON.stringify({values:[linha]})});
-  if(!wr.ok){const e=await wr.json().catch(()=>({}));throw new Error('Erro ao escrever frete: '+wr.status);}
-}
-
-async function sincPropriedade(prop){
-  try{
-    const raiz=frtOdPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const nomeArq='Clientes_Propriedades.xlsx';
-    const fid=await getOrCreateExcel(`${raiz}/${nomeArq}`,'Clientes');
-    await garantirAba(fid,'Clientes','prop');
-    const linha=[prop.nome||'',prop.produtor||'',prop.municipio||'',prop.telefone||'',prop.lat||'',prop.lng||'',prop.obs||''];
-    const hdrs={'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
-    await new Promise(r=>setTimeout(r,1000));
-    const ur=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets/Clientes/usedRange`,{headers:hdrs});
-    const next=ur.ok?(await ur.json()).rowCount+1:2;
-    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fid}/workbook/worksheets/Clientes/range(address='A${next}:G${next}')`,{method:'PATCH',headers:hdrs,body:JSON.stringify({values:[linha]})});
-    prop.sinc=true;salvarPropsLocal();toastOk('Propriedade sincronizada!');
-  }catch(e){console.warn('Erro sinc prop:',e);toastErr('Erro ao sincronizar propriedade.');}
-}
-
-// ===================== EXCEL HELPER =====================
-const XLSX_B64='UEsDBBQAAAAIALONdFy5mqGQAQEAADsCAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbK1RyU7DMBC99yssX6vYKQeEUJIeWI7AoXzA4EwSK97kcUv69zgpi4Qo4sBpNHqrZqrtZA07YCTtXc03ouQMnfKtdn3Nn3f3xRVnlMC1YLzDmh+R+LZZVbtjQGJZ7KjmQ0rhWkpSA1og4QO6jHQ+Wkh5jb0MoEboUV6U5aVU3iV0qUizB29WjFW32MHeJHY3ZeTUJaIhzm5O3Dmu5hCC0QpSxuXBtd+CivcQkZULhwYdaJ0JXJ4LmcHzGV/Sx3yiqFtkTxDTA9hMlJORrz6OL96P4nefH7r6rtMKW6/2NksEhYjQ0oCYrBHLFBa0W/+pwsInuYzNP3f59P+oUsnl980bUEsDBBQAAAAIALONdFxdh/QutAAAACwBAAALAAAAX3JlbHMvLnJlbHONz78OgjAQBvCdp2hul4KDMYbCYkxYDT5ALcefUHpNWxXe3o5iHBwvd9/v8hXVMmv2ROdHMgLyNAOGRlE7ml7ArbnsjsB8kKaVmgwKWNFDVSbFFbUMMeOH0XoWEeMFDCHYE+deDThLn5JFEzcduVmGOLqeW6km2SPfZ9mBu08DyoSxDcvqVoCr2xxYs1r8h6euGxWeST1mNOHHl6+LKEvXYxCwaP4iN92JpjSiwGNHvilZvgFQSwMEFAAAAAgAs410XFkhbT3DAAAAKgEAAA8AAAB4bC93b3JrYm9vay54bWyNj71uwzAMhPc8hcA9kd2hKAzbWYICmds+gGrRsRCLNEilP29fOoH3TjyCuI937fEnz+4LRRNTB/WhAoc0cEx06eDj/XU/Ak5LoBhmJuzgFxWO/a79Zrl+Ml+d+Uk7mEpZGu91mDAHPfCCZJeRJYdiq1y8LoIh6oRY8uyfqurZ55AIdu7BaOQ/FB7HNOCJh1tGKg+M4ByK5dcpLQq9Adv7G13ltjgK2fK/rbq2Tus8R6sMTppkQs6xBn93+83e+q1n/wdQSwMEFAAAAAgAs410XPVgA4K3AAAALQEAABoAAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc43PzQrCMAwH8PueouTusnkQkXW7iLCrzAcoXfaBW1ua+rG3t3gQBx48hSTkF/5F9ZwncSfPozUS8jQDQUbbdjS9hEtz2uxBcFCmVZM1JGEhhqpMijNNKsQbHkbHIiKGJQwhuAMi64Fmxal1ZOKms35WIba+R6f0VfWE2yzbof82oEyEWLGibiX4us1BNIujf3jbdaOmo9W3mUz48QUf1l95IAoRVb6nIOEzYnyXPI0qYAyJq5TlC1BLAwQUAAAACACzjXRch5PdQocAAAChAAAAGAAAAHhsL3dvcmtzaGVldHMvc2hlZXQxLnhtbD3MSw7CMAwE0H1PEXlPXVgghJJ2gzgBHMBqTFvROFEc8bk9URcsZ0bz7PAJq3lx1iWKg33bgWEZo19kcnC/XXcnMFpIPK1R2MGXFYa+se+YnzozF1MBUQdzKemMqOPMgbSNiaUuj5gDlRrzhJoyk99OYcVD1x0x0CLQN8bYrb5QIaw4/vX+B1BLAQIUAxQAAAAIALONdFy5mqGQAQEAADsCAAATAAAAAAAAAAAAAACAAQAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQDFAAAAAgAs410XF2H9C60AAAALAEAAAsAAAAAAAAAAAAAAIABMgEAAF9yZWxzLy5yZWxzUEsBAhQDFAAAAAgAs410XFkhbT3DAAAAKgEAAA8AAAAAAAAAAAAAAIABDwIAAHhsL3dvcmtib29rLnhtbFBLAQIUAxQAAAAIALONdFz1YAOCtwAAAC0BAAAaAAAAAAAAAAAAAACAAf8CAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc1BLAQIUAxQAAAAIALONdFyHk91ChwAAAKEAAAAYAAAAAAAAAAAAAACAAe4DAAB4bC93b3Jrc2hlZXRzL3NoZWV0MS54bWxQSwUGAAAAAAUABQBFAQAAqwQAAAAA';
-async function getOrCreateExcel(path,mes){
-  const pathEnc=path.split('/').map(p=>encodeURIComponent(p)).join('/');
-  const checkR=await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}`,{headers:{Authorization:'Bearer '+msToken}});
-  if(checkR.ok){const d=await checkR.json();return d.id;}
-  function b64toAb(b64){const bin=atob(b64),buf=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);return buf.buffer;}
-  const cr=await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}:/content`,{method:'PUT',headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:b64toAb(XLSX_B64)});
-  if(!cr.ok){const e=await cr.json().catch(()=>({}));throw new Error('Falha ao criar Excel: '+(e.error?.message||cr.status));}
-  const d=await cr.json();
+  const createR = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/root:/${path.split('/').map(p => encodeURIComponent(p)).join('/')}:/content`,
+    { method:'PUT', headers:{Authorization:'Bearer '+msToken,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}, body:b64toAbXlsx(xlsxB64) }
+  );
+  if(!createR.ok) {
+    const err = await createR.json().catch(()=>({}));
+    throw new Error('Falha ao criar Excel: '+(err.error?.message||createR.status));
+  }
+  const d = await createR.json();
+  console.log('Excel criado:', d.id, d.name);
   await new Promise(r=>setTimeout(r,4000));
   return d.id;
 }
-async function garantirAba(fileId,mes,tipo){
+
+async function garantirAba(fileId, mes) {
   await new Promise(r=>setTimeout(r,2000));
-  const hdrs={'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
-  const r=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:hdrs});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error('Erro listar abas: '+r.status);}
-  const abas=(await r.json()).value.map(s=>s.name);
-  if(!abas.includes(mes)){
-    const cr=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{method:'POST',headers:hdrs,body:JSON.stringify({name:mes})});
-    if(!cr.ok){const e=await cr.json().catch(()=>({}));throw new Error('Erro criar aba: '+cr.status);}
+  const baseHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:baseHdrs});
+  if(!r.ok) {
+    const errBody = await r.json().catch(()=>({}));
+    throw new Error('Erro ao listar abas: '+r.status+' — '+(errBody.error?.message||''));
+  }
+  const d = await r.json();
+  const abas = (d.value||[]).map(s=>s.name);
+  console.log('Abas existentes:', abas);
+  if(!abas.includes(mes)) {
+    console.log('Criando aba:', mes);
+    const crAba = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{
+      method:'POST', headers:baseHdrs, body:JSON.stringify({name:mes})
+    });
+    if(!crAba.ok) {
+      const e = await crAba.json().catch(()=>({}));
+      throw new Error('Erro ao criar aba: '+crAba.status+' — '+(e.error?.message||''));
+    }
     await new Promise(r=>setTimeout(r,3000));
   }
-  let cabHdrs;
-  if(tipo==='clf')cabHdrs=[['Data','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.']];
-  else if(tipo==='frt')cabHdrs=[['Data','Hora','Motorista','Veiculo','Produtor','Municipio','Propriedade','Latitude','Longitude','TipoCafe','Sacas','Peso(kg)','Destino','NF/Ticket','Km','Valor(R$)','Observacoes','Status']];
-  else if(tipo==='prop')cabHdrs=[['Propriedade','Produtor','Municipio','Telefone','Latitude','Longitude','Observacoes']];
-  if(!cabHdrs)return;
+  const cabHdrs = [['Data','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.']];
   await new Promise(r=>setTimeout(r,1000));
-  const chk=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,{headers:hdrs});
-  const hdrData=await chk.json().catch(()=>({values:[['']]}));
-  if(!hdrData.values?.[0]?.[0]){
-    const cols=cabHdrs[0].length, lastCol=String.fromCharCode(64+cols);
-    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:${lastCol}1')`,{method:'PATCH',headers:hdrs,body:JSON.stringify({values:cabHdrs})});
+  const checkHdr = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
+    {headers:baseHdrs}
+  );
+  const hdrData = await checkHdr.json().catch(()=>({values:[['']]}));
+  if(!hdrData.values?.[0]?.[0]) {
+    console.log('Inserindo cabeçalhos na aba:', mes);
+    const hdrResp = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:Y1')`,
+      {method:'PATCH', headers:baseHdrs, body:JSON.stringify({values:cabHdrs})}
+    );
+    if(!hdrResp.ok) console.warn('Cabeçalho falhou:', hdrResp.status);
     await new Promise(r=>setTimeout(r,1500));
   }
 }
 
-// ===================== COMPARTILHAMENTO CLASSIFICAÇÃO =====================
-function buildCard(c){
-  const tl=c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
-  const tc=c.tipo==='beneficiado'?'background:#EEF0FB;color:#3C3489':c.tipo==='coco'?'background:#EAF3DE;color:#3B6D11':'background:#FDF3E3;color:#7A4F00';
-  const df=c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'';
-  let itens=[];
-  if(c.tipo!=='escolha'){if(c.catacao)itens.push(['% Catação',c.catacao+'%']);if(c.impureza)itens.push(['% Impureza',c.impureza+'%']);if(c.umidade)itens.push(['Umidade',c.umidade+'%']);if(c.pen17)itens.push(['Peneira 17+',c.pen17+'%']);if(c.penfundo)itens.push(['Pen. Fundo',c.penfundo+'%']);if(c.renda)itens.push(['Renda',c.renda+'%']);if(c.defeitos&&Object.keys(c.defeitos).length)itens.push(['Defeitos',Object.entries(c.defeitos).map(([k,v])=>k+':'+v).join(' ')]);}
-  else{if(c.aprov)itens.push(['Aproveit.',c.aprov+'%']);if(c.penfundo)itens.push(['Pen. Fundo',c.penfundo+'%']);const imp=[c.impPau&&'Pau:'+c.impPau+'%',c.impPedra&&'Pedra:'+c.impPedra+'%',c.impCasca&&'Casca:'+c.impCasca+'%'].filter(Boolean).join(' ');if(imp)itens.push(['Impureza',imp]);}
-  const grid=itens.map(([l,v])=>`<div class="sc-item"><div class="sc-item-lbl">${l}</div><div class="sc-item-val">${v}</div></div>`).join('');
-  const srcFoto=c.foto||c.fotoUrl||'';
-  const fotoHtml=srcFoto?`<img class="sc-foto" src="${srcFoto}" crossorigin="anonymous">`:`<div class="sc-no-foto">☕</div>`;
-  const bebHtml=c.bebida?`<div class="sc-bebida"><div class="sc-bebida-lbl">Bebida</div><div class="sc-bebida-val">${c.bebida}${c.bebidaObs?' · '+c.bebidaObs:''}</div></div>`:'';
-  const obsHtml=c.obs?`<div class="sc-obs">${c.obs}</div>`:'';
-  return `<div class="sc-head"><div class="sc-head-icon">☕</div><div><div class="sc-head-title">Laudo de Classificação</div><div class="sc-head-sub">${df} · ${c.clf||''}</div></div></div>${fotoHtml}<div class="sc-body"><div class="sc-produtor">${c.produtor||'—'}</div><div class="sc-meta">Lote: ${c.lote||'—'} · ${c.kg?c.kg+' kg · ':''}${c.tipo==='coco'?(c.sacas||'—')+' @':(c.sacas||'—')+' sc'}</div><span class="sc-tipo" style="${tc}">${tl}</span>${bebHtml}<div class="sc-grid">${grid}</div>${obsHtml}</div><div class="sc-foot">Café Vilela · Classificação · ${new Date().getFullYear()}</div>`;
+function b64toBlob(b64) {
+  const p=b64.split(';base64,'), mime=p[0].split(':')[1], raw=atob(p[1]);
+  const arr=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return new Blob([arr],{type:mime});
 }
-async function gerarImg(c){
-  const card=document.getElementById('share-card');
-  let fotoSrc=c.foto||'';
-  if(!fotoSrc){const path=c.fotoPath||c.fotoUrl||'';if(path)fotoSrc=await buscarFotoOneDrive(path)||'';}
-  card.innerHTML=buildCard({...c,foto:fotoSrc});
+
+// ===== COMPARTILHAMENTO =====
+
+function buildCard(c) {
+  const tl = c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
+  const tc = c.tipo==='beneficiado'?'background:#EEF0FB;color:#3C3489':c.tipo==='coco'?'background:#EAF3DE;color:#3B6D11':'background:#FDF3E3;color:#7A4F00';
+  const df = c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'';
+  let itens = [];
+  if(c.tipo!=='escolha') {
+    if(c.catacao) itens.push(['% Catação',c.catacao+'%']);
+    if(c.impureza) itens.push(['% Impureza',c.impureza+'%']);
+    if(c.umidade) itens.push(['Umidade',c.umidade+'%']);
+    if(c.pen17) itens.push(['Peneira 17+',c.pen17+'%']);
+    if(c.penfundo) itens.push(['Pen. Fundo',c.penfundo+'%']);
+    if(c.renda) itens.push(['Renda',c.renda+'%']);
+    if(c.defeitos&&Object.keys(c.defeitos).length) itens.push(['Defeitos',Object.entries(c.defeitos).map(([k,v])=>k+':'+v).join(' ')]);
+  } else {
+    if(c.aprov) itens.push(['Aproveit.',c.aprov+'%']);
+    if(c.penfundo) itens.push(['Pen. Fundo',c.penfundo+'%']);
+    const imp=[c.impPau&&'Pau:'+c.impPau+'%',c.impPedra&&'Pedra:'+c.impPedra+'%',c.impCasca&&'Casca:'+c.impCasca+'%'].filter(Boolean).join(' ');
+    if(imp) itens.push(['Impureza',imp]);
+  }
+  const grid = itens.map(([l,v])=>`<div class="sc-item"><div class="sc-item-lbl">${l}</div><div class="sc-item-val">${v}</div></div>`).join('');
+  const srcFoto = c.foto || c.fotoUrl || '';
+  const fotoHtml = srcFoto ? `<img class="sc-foto" src="${srcFoto}" crossorigin="anonymous">` : `<div class="sc-no-foto">☕</div>`;
+  const bebHtml = c.bebida?`<div class="sc-bebida"><div class="sc-bebida-lbl">Bebida</div><div class="sc-bebida-val">${c.bebida}${c.bebidaObs?' · '+c.bebidaObs:''}</div></div>`:'';
+  const obsHtml = c.obs?`<div class="sc-obs">${c.obs}</div>`:'';
+  return `<div class="sc-head"><div class="sc-head-icon">☕</div><div><div class="sc-head-title">Laudo de Classificação</div><div class="sc-head-sub">${df} · ${c.clf||''}</div></div></div>
+${fotoHtml}
+<div class="sc-body">
+  <div class="sc-produtor">${c.produtor||'—'}</div>
+  <div class="sc-meta">Lote: ${c.lote||'—'} · ${c.kg ? c.kg+' kg · ' : ''}${c.tipo==='coco' ? (c.sacas||'—')+' @' : (c.sacas||'—')+' sc'}</div>
+  <span class="sc-tipo" style="${tc}">${tl}</span>
+  ${bebHtml}
+  <div class="sc-grid">${grid}</div>
+  ${obsHtml}
+</div>
+<div class="sc-foot">Café Vilela · Classificação · ${new Date().getFullYear()}</div>`;
+}
+
+async function gerarImg(c) {
+  const card = document.getElementById('share-card');
+  // Resolve a foto: base64 local → OneDrive pelo path
+  let fotoSrc = c.foto || '';
+  if(!fotoSrc) {
+    const path = c.fotoPath || c.fotoUrl || '';
+    if(path) fotoSrc = await buscarFotoOneDrive(path) || '';
+  }
+  card.innerHTML = buildCard({...c, foto: fotoSrc});
   await new Promise(r=>setTimeout(r,400));
-  const canvas=await html2canvas(card,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+  const canvas = await html2canvas(card,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
   return canvas.toDataURL('image/png');
 }
-function textoLaudo(c){
-  const tl=c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
-  const df=c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'';
-  let l=['*Laudo de Classificação — Café Vilela*','',`*Produtor:* ${c.produtor||'—'}`,`*Data:* ${df}`,`*Classificador:* ${c.clf||'—'}`,`*Tipo:* ${tl}`,c.kg?`*Quantidade:* ${c.kg} kg`:'',c.tipo==='coco'?`*Arrobas:* ${c.sacas||'—'} @${c.prevSacas?' · Prev. sacas benef.: '+c.prevSacas+' sc':''}`:`*Sacas:* ${c.sacas||'—'} sc`,`*Lote/NF:* ${c.lote||'—'}`];
-  if(c.tipo!=='escolha'){if(c.catacao)l.push(`*% Catação:* ${c.catacao}%`);if(c.impureza)l.push(`*% Impureza:* ${c.impureza}%`);if(c.umidade)l.push(`*Umidade:* ${c.umidade}%`);if(c.pen17)l.push(`*Peneira 17+:* ${c.pen17}%`);if(c.penfundo)l.push(`*Peneira Fundo:* ${c.penfundo}%`);if(c.renda)l.push(`*Renda:* ${c.renda}%`);if(c.defeitos&&Object.keys(c.defeitos).length)l.push(`*Defeitos:* ${Object.entries(c.defeitos).map(([k,v])=>k+': '+v).join(' | ')}`);}
-  else{if(c.aprov)l.push(`*Aproveitamento:* ${c.aprov}%`);if(c.penfundo)l.push(`*Peneira Fundo:* ${c.penfundo}%`);const imp=((parseFloat(c.impPau)||0)+(parseFloat(c.impPedra)||0)+(parseFloat(c.impCasca)||0)).toFixed(2);if(parseFloat(imp)>0){l.push(`*Impureza Total:* ${imp}%`);if(c.impPau)l.push(`  · Pau: ${c.impPau}%`);if(c.impPedra)l.push(`  · Pedra/Torrão: ${c.impPedra}%`);if(c.impCasca)l.push(`  · Casca: ${c.impCasca}%`);}}
-  if(c.bebida)l.push(`*Bebida:* ${c.bebida}${c.bebidaObs?' ('+c.bebidaObs+')':''}`);
-  if(c.obs)l.push(`*Observações:* ${c.obs}`);
-  l.push('','_Café Vilela · Classificação_');
-  return l.filter(x=>x!=='').join('\n').replace(/\n{3,}/g,'\n\n');
+
+function textoLaudo(c) {
+  const tl = c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
+  const df = c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'';
+  let linhas = [
+    '*Laudo de Classificação — Café Vilela*',
+    '',
+    `*Produtor:* ${c.produtor||'—'}`,
+    `*Data:* ${df}`,
+    `*Classificador:* ${c.clf||'—'}`,
+    `*Tipo:* ${tl}`,
+    c.kg ? `*Quantidade:* ${c.kg} kg` : '',
+    c.tipo==='coco'
+      ? `*Arrobas:* ${c.sacas||'—'} @${c.prevSacas?' · Prev. sacas benef.: '+c.prevSacas+' sc':''}`
+      : `*Sacas:* ${c.sacas||'—'} sc`,
+    `*Lote/NF:* ${c.lote||'—'}`,
+  ];
+  if(c.tipo !== 'escolha') {
+    if(c.catacao)  linhas.push(`*% Catação:* ${c.catacao}%`);
+    if(c.impureza) linhas.push(`*% Impureza:* ${c.impureza}%`);
+    if(c.umidade)  linhas.push(`*Umidade:* ${c.umidade}%`);
+    if(c.pen17)    linhas.push(`*Peneira 17+:* ${c.pen17}%`);
+    if(c.penfundo) linhas.push(`*Peneira Fundo:* ${c.penfundo}%`);
+    if(c.renda)    linhas.push(`*Renda:* ${c.renda}%`);
+    if(c.defeitos && Object.keys(c.defeitos).length)
+      linhas.push(`*Defeitos:* ${Object.entries(c.defeitos).map(([k,v])=>k+': '+v).join(' | ')}`);
+  } else {
+    if(c.aprov)    linhas.push(`*Aproveitamento:* ${c.aprov}%`);
+    if(c.penfundo) linhas.push(`*Peneira Fundo:* ${c.penfundo}%`);
+    const impTotal = ((parseFloat(c.impPau)||0)+(parseFloat(c.impPedra)||0)+(parseFloat(c.impCasca)||0)).toFixed(2);
+    if(parseFloat(impTotal)>0) {
+      linhas.push(`*Impureza Total:* ${impTotal}%`);
+      if(c.impPau)   linhas.push(`  · Pau: ${c.impPau}%`);
+      if(c.impPedra) linhas.push(`  · Pedra/Torrão: ${c.impPedra}%`);
+      if(c.impCasca) linhas.push(`  · Casca: ${c.impCasca}%`);
+    }
+  }
+  if(c.bebida) linhas.push(`*Bebida:* ${c.bebida}${c.bebidaObs?' ('+c.bebidaObs+')':''}`);
+  if(c.obs)    linhas.push(`*Observações:* ${c.obs}`);
+  linhas.push('', '_Café Vilela · Classificação_');
+  return linhas.filter(l => l !== '').join('\n').replace(/\n{3,}/g,'\n\n');
 }
-async function shareWA(){
-  const c=dadosClf.find(x=>x.id===clfItemId);if(!c)return;
-  closeClfModal();toastOk('Gerando imagem...');
-  const img=await gerarImg(c), txt=textoLaudo(c);
-  try{const blob=await(await fetch(img)).blob();const file=new File([blob],'laudo.png',{type:'image/png'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:'Laudo de Classificação',text:txt,files:[file]});return;}}catch(e){}
-  const a=document.createElement('a');a.href=img;a.download=`laudo_${(c.produtor||'cafe').replace(/\s+/g,'_')}.png`;a.click();
-  setTimeout(()=>{window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');toastOk('Imagem baixada! Abra o WhatsApp, cole o texto e anexe a imagem.');},800);
+
+async function shareWA() {
+  const c = dados.find(x=>x.id===itemId); if(!c) return;
+  closeModal();
+  toastOk('Gerando imagem...');
+  const img = await gerarImg(c);
+  const txt = textoLaudo(c);
+
+  // Tenta Web Share API (Android Chrome nativo — envia imagem + texto juntos)
+  try {
+    const blob = await (await fetch(img)).blob();
+    const file = new File([blob], 'laudo.png', {type:'image/png'});
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+      await navigator.share({title:'Laudo de Classificação', text: txt, files:[file]});
+      return;
+    }
+  } catch(e) { /* fallback abaixo */ }
+
+  // Fallback: baixa a imagem e abre WhatsApp Web com o texto
+  const a = document.createElement('a');
+  a.href = img;
+  a.download = `laudo_${(c.produtor||'cafe').replace(/\s+/g,'_')}.png`;
+  a.click();
+  setTimeout(() => {
+    window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+    toastOk('Imagem baixada! Abra o WhatsApp, cole o texto e anexe a imagem.');
+  }, 800);
 }
-async function shareEmail(){
-  const c=dadosClf.find(x=>x.id===clfItemId);if(!c)return;
-  closeClfModal();toastOk('Gerando imagem...');
-  const img=await gerarImg(c);
-  const a=document.createElement('a');a.href=img;a.download=`laudo_${c.produtor||'cafe'}.png`;a.click();
-  const df=c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'';
-  setTimeout(()=>{window.location.href=`mailto:?subject=${encodeURIComponent('Laudo de Classificação — '+(c.produtor||'')+' — '+df)}&body=${encodeURIComponent(textoLaudo(c).replace(/\*/g,'')+'\n\nImagem do laudo em anexo.')}`},600);
+
+async function shareEmail() {
+  const c = dados.find(x=>x.id===itemId); if(!c) return;
+  closeModal(); toastOk('Gerando imagem...');
+  const img = await gerarImg(c);
+  const a=document.createElement('a'); a.href=img; a.download=`laudo_${c.produtor||'cafe'}.png`; a.click();
+  const df = c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'';
+  const assunto = `Laudo de Classificação — ${c.produtor||''} — ${df}`;
+  const corpo = textoLaudo(c).replace(/\*/g,'');
+  setTimeout(()=>{ window.location.href=`mailto:?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo+'\n\nImagem do laudo em anexo.')}`; },600);
   toastOk('Imagem baixada! Anexe ao e-mail.');
 }
-async function sharePDF(){
-  const c=dadosClf.find(x=>x.id===clfItemId);if(!c)return;
-  closeClfModal();toastOk('Gerando PDF...');
-  const img=await gerarImg(c);
-  const win=window.open('','_blank');
+
+async function sharePDF() {
+  const c = dados.find(x=>x.id===itemId); if(!c) return;
+  closeModal(); toastOk('Gerando PDF...');
+  const img = await gerarImg(c);
+  const win = window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html><head><title>Laudo</title><style>*{margin:0;padding:0}body{background:#fff}img{width:100%;max-width:460px;display:block;margin:0 auto}@media print{body{margin:0}}</style></head><body><img src="${img}"><script>window.onload=function(){window.print()}<\/script></body></html>`);
   win.document.close();
 }
 
-// ===================== UTILS =====================
-function b64toBlob(b64){const p=b64.split(';base64,'),mime=p[0].split(':')[1],raw=atob(p[1]);const arr=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);return new Blob([arr],{type:mime});}
-function toastOk(m){const t=document.getElementById('toast-ok');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
-function toastErr(m){const t=document.getElementById('toast-err');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),5000);}
+// ===== HISTÓRICO =====
 
-// Fechar modais clicando fora
-['clf-modal','frt-modal','prop-modal'].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el)el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
-});
+function renderHist() {
+  const c = document.getElementById('hist-container');
+  if(!dados.length) { c.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação este mês.</p></div>'; return; }
+  c.innerHTML = '<div class="hist-list">'+[...dados].sort((a,b)=>b.id-a.id).map(r=>{
+    const tc = r.tipo==='beneficiado'?'tag-b':r.tipo==='coco'?'tag-c':'tag-e';
+    const tl = r.tipo==='beneficiado'?'Beneficiado':r.tipo==='coco'?'Em Coco':'Escolha';
+    const df = r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+    return `<div class="hist-item" onclick="verDetalhe(${r.id})">
+      <div class="hi-data">${df}</div>
+      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
+      <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="tag ${tc}">${tl}</span>
+        <span style="font-size:10px">${r.sinc?'🟢':'🟡'}</span>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
 
-// ===================== INIT =====================
-checkToken();
+function verDetalhe(id) {
+  const c = dados.find(x=>x.id===id); if(!c) return;
+  itemId = id;
+  const tl = c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
+  const df = c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  document.getElementById('modal-title').textContent = c.produtor||'Classificação';
+  let rows=[['Data',df],['Classificador',c.clf||'—'],['Lote/NF',c.lote||'—']];
+  if(c.kg) rows.push(['Quantidade',c.kg+' kg']);
+  if(c.tipo==='coco') {
+    if(c.sacas) rows.push(['Arrobas',c.sacas+' @']);
+    if(c.prevSacas) rows.push(['Prev. Sacas Benef.',c.prevSacas+' sc']);
+  } else {
+    if(c.sacas) rows.push(['Sacas',c.sacas+' sc']);
+  }
+  rows.push(['Tipo',tl]);
+  if(c.tipo!=='escolha'){
+    if(c.catacao) rows.push(['% Catação',c.catacao+'%']);
+    if(c.impureza) rows.push(['% Impureza',c.impureza+'%']);
+    if(c.umidade) rows.push(['Umidade',c.umidade+'%']);
+    if(c.pen17) rows.push(['Peneira 17+',c.pen17+'%']);
+    if(c.penfundo) rows.push(['Peneira Fundo',c.penfundo+'%']);
+    if(c.renda) rows.push(['Renda',c.renda+'%']);
+    if(c.bebida) rows.push(['Bebida',c.bebida]);
+    if(c.bebidaObs) rows.push(['Obs. Bebida',c.bebidaObs]);
+    if(c.defeitos&&Object.keys(c.defeitos).length) rows.push(['Defeitos',Object.entries(c.defeitos).map(([k,v])=>k+': '+v).join(', ')]);
+  } else {
+    if(c.aprov) rows.push(['% Aproveitamento',c.aprov+'%']);
+    if(c.penfundo) rows.push(['% Peneira Fundo',c.penfundo+'%']);
+    if(c.impPau) rows.push(['Imp. Pau',c.impPau+'%']);
+    if(c.impPedra) rows.push(['Imp. Pedra/Torrão',c.impPedra+'%']);
+    if(c.impCasca) rows.push(['Imp. Casca',c.impCasca+'%']);
+    if(c.bebida) rows.push(['Bebida',c.bebida]);
+    if(c.bebidaObs) rows.push(['Obs. Bebida',c.bebidaObs]);
+  }
+  if(c.obs) rows.push(['Observações',c.obs]);
+  rows.push(['Status',c.sinc?'Sincronizado ✓':'Pendente sincronização']);
+  document.getElementById('modal-body').innerHTML = rows.map(([k,v])=>`<div class="modal-row"><span>${k}</span><span>${v}</span></div>`).join('');
+  document.getElementById('btn-sinc').style.display = (!c.sinc&&msToken)?'block':'none';
+  document.getElementById('share-section').style.display = 'block';
+  document.getElementById('modal-foto').style.display = 'none'; // reseta antes de carregar
+  document.getElementById('modal').classList.add('open');
+  carregarFotoModal(c); // carrega foto de forma assíncrona
+}
+
+async function sincItem() {
+  const r = dados.find(x=>x.id===itemId); if(!r) return;
+  closeModal(); await sincReg(r); renderHist();
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function updateBadge() { document.getElementById('badge').textContent = dados.length; }
+function setSinc(t, msg) {
+  const w=document.getElementById('sync-wrap'), d=document.getElementById('sync-dot'), tx=document.getElementById('sync-txt');
+  w.style.display='flex'; d.className='sync-dot '+t; tx.textContent=msg;
+}
+function toastOk(m) { const t=document.getElementById('toast-ok'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3500); }
+function toastErr(m) { const t=document.getElementById('toast-err'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),5000); }
+
+function salvarCfg() {
+  clientId = document.getElementById('cfg-client').value.trim();
+  tenantId = document.getElementById('cfg-tenant').value.trim();
+  localStorage.setItem('cafe_client_id',clientId);
+  localStorage.setItem('cafe_tenant_id',tenantId);
+  toastOk('Configuração salva!');
+}
+function salvarPath() {
+  odPath = document.getElementById('cfg-path').value.trim() || 'Classificação';
+  localStorage.setItem('cafe_od_path',odPath);
+  toastOk('Pasta do OneDrive salva!');
+}
+
+function resetForm() {
+  clf=''; tipo=''; selbBC={}; selbE={}; fotoBC=null; fotoE=null;
+  document.querySelectorAll('.clf-btn,.tipo-card').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('form-bc').style.display='none';
+  document.getElementById('form-e').style.display='none';
+  document.getElementById('btn-salvar-row').style.display='none';
+  const cv = document.getElementById('calc-volume'); if(cv) cv.style.display='none';
+  ['f-lote','f-produtor','f-kg','f-catacao','f-impureza','f-umidade','f-pen17','f-penfundo','f-renda','f-bobs-bc','f-obs-bc','f-aprov','f-penfundo-e','f-imp-pau','f-imp-pedra','f-imp-casca','f-bobs-e','f-obs-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.querySelectorAll('.defeito-item input').forEach(i=>i.value='');
+  buildBebidas('bc'); buildBebidas('e');
+  document.getElementById('xic-bc').innerHTML='';
+  document.getElementById('xic-e').innerHTML='';
+  ['prev-bc','prev-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  ['icon-bc','icon-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
+  ['hint-bc','hint-e'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
+}
+
+init();
 </script>
 </body>
 </html>
