@@ -301,9 +301,10 @@ body {
     <div class="card">
       <div class="section-title">Classificador</div>
       <div class="classificador-row">
-        <div class="clf-btn" id="clf-jm1" onclick="selectClf('João Marcos','clf-jm1')">
-          <div class="clf-avatar">JM</div><div class="clf-name">João Marcos</div>
+        <div class="clf-btn" id="clf-outros" onclick="selectClf('','clf-outros')">
+          <div class="clf-avatar">?</div><div class="clf-name">Outros</div>
         </div>
+        <input type="text" id="clf-outros-nome" placeholder="Nome do classificador" style="display:none;margin-top:0.75rem;width:100%;padding:10px 14px;border:1.5px solid var(--border-mid);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text)" oninput="clf=this.value.trim()">
         <div class="clf-btn" id="clf-jm2" onclick="selectClf('João Marcelo','clf-jm2')">
           <div class="clf-avatar">JM</div><div class="clf-name">João Marcelo</div>
         </div>
@@ -380,11 +381,16 @@ body {
       </div>
       <div class="card">
         <div class="section-title">Foto da pauta</div>
-        <div class="photo-wrap" onclick="document.getElementById('photo-bc').click()">
-          <input type="file" id="photo-bc" accept="image/*" capture="environment" onchange="previewFoto(event,'prev-bc','icon-bc','hint-bc')" style="display:none">
+        <div class="photo-wrap" id="wrap-bc" onclick="document.getElementById('photo-bc-gallery').click()">
+          <input type="file" id="photo-bc-camera"  accept="image/*" capture="environment" onchange="previewFoto(event,'prev-bc','icon-bc','hint-bc')" style="display:none">
+          <input type="file" id="photo-bc-gallery" accept="image/*" onchange="previewFoto(event,'prev-bc','icon-bc','hint-bc')" style="display:none">
           <div id="icon-bc" class="photo-icon-lbl">📷</div>
-          <p id="hint-bc" class="photo-hint">Toque para fotografar o café catado</p>
+          <p id="hint-bc" class="photo-hint">Toque para selecionar da galeria</p>
           <img class="photo-preview" id="prev-bc">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button type="button" onclick="event.stopPropagation();document.getElementById('photo-bc-camera').click()" style="flex:1;padding:9px;border:1px solid var(--border-mid);border-radius:8px;background:var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">📷 Câmera</button>
+          <button type="button" onclick="event.stopPropagation();document.getElementById('photo-bc-gallery').click()" style="flex:1;padding:9px;border:1px solid var(--border-mid);border-radius:8px;background:var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">🖼️ Galeria / Arquivo</button>
         </div>
         <div class="form-group" style="margin-top:1rem"><label>Observações gerais</label><textarea id="f-obs-bc" placeholder="Anotações adicionais..."></textarea></div>
       </div>
@@ -431,11 +437,16 @@ body {
       </div>
       <div class="card">
         <div class="section-title">Foto da pauta</div>
-        <div class="photo-wrap" onclick="document.getElementById('photo-e').click()">
-          <input type="file" id="photo-e" accept="image/*" capture="environment" onchange="previewFoto(event,'prev-e','icon-e','hint-e')" style="display:none">
+        <div class="photo-wrap" id="wrap-e" onclick="document.getElementById('photo-e-gallery').click()">
+          <input type="file" id="photo-e-camera"  accept="image/*" capture="environment" onchange="previewFoto(event,'prev-e','icon-e','hint-e')" style="display:none">
+          <input type="file" id="photo-e-gallery" accept="image/*" onchange="previewFoto(event,'prev-e','icon-e','hint-e')" style="display:none">
           <div id="icon-e" class="photo-icon-lbl">📷</div>
-          <p id="hint-e" class="photo-hint">Toque para fotografar o café catado</p>
+          <p id="hint-e" class="photo-hint">Toque para selecionar da galeria</p>
           <img class="photo-preview" id="prev-e">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button type="button" onclick="event.stopPropagation();document.getElementById('photo-e-camera').click()" style="flex:1;padding:9px;border:1px solid var(--border-mid);border-radius:8px;background:var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">📷 Câmera</button>
+          <button type="button" onclick="event.stopPropagation();document.getElementById('photo-e-gallery').click()" style="flex:1;padding:9px;border:1px solid var(--border-mid);border-radius:8px;background:var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">🖼️ Galeria / Arquivo</button>
         </div>
         <div class="form-group" style="margin-top:1rem"><label>Observações gerais</label><textarea id="f-obs-e" placeholder="Anotações adicionais..."></textarea></div>
       </div>
@@ -783,6 +794,15 @@ function selectClf(nome, id) {
   clf = nome;
   document.querySelectorAll('.clf-btn').forEach(b=>b.classList.remove('selected'));
   document.getElementById(id).classList.add('selected');
+  const outrosInput = document.getElementById('clf-outros-nome');
+  if(id === 'clf-outros') {
+    outrosInput.style.display = 'block';
+    outrosInput.focus();
+    clf = outrosInput.value.trim();
+  } else {
+    outrosInput.style.display = 'none';
+    outrosInput.value = '';
+  }
 }
 
 function selectTipo(t) {
@@ -1478,6 +1498,8 @@ function salvarPath() {
 function resetForm() {
   clf=''; tipo=''; selbBC={}; selbE={}; fotoBC=null; fotoE=null;
   document.querySelectorAll('.clf-btn,.tipo-card').forEach(el=>el.classList.remove('selected'));
+  const outrosInput = document.getElementById('clf-outros-nome');
+  if(outrosInput) { outrosInput.value=''; outrosInput.style.display='none'; }
   document.getElementById('form-bc').style.display='none';
   document.getElementById('form-e').style.display='none';
   document.getElementById('btn-salvar-row').style.display='none';
