@@ -1378,8 +1378,19 @@ function textoLaudo(c) {
   return linhas.filter(l => l !== '').join('\n').replace(/\n{3,}/g,'\n\n');
 }
 
+function buscarRegistro(id) {
+  let r = dados.find(x=>x.id===id);
+  if(!r) {
+    for(const chave of Object.keys(cacheHistorico)) {
+      r = cacheHistorico[chave].find(x=>x.id===id);
+      if(r) break;
+    }
+  }
+  return r || null;
+}
+
 async function shareWA() {
-  const c = dados.find(x=>x.id===itemId); if(!c) return;
+  const c = buscarRegistro(itemId); if(!c) return;
   closeModal();
   toastOk('Gerando imagem...');
   const img = await gerarImg(c);
@@ -1407,7 +1418,7 @@ async function shareWA() {
 }
 
 async function shareEmail() {
-  const c = dados.find(x=>x.id===itemId); if(!c) return;
+  const c = buscarRegistro(itemId); if(!c) return;
   closeModal(); toastOk('Gerando imagem...');
   const img = await gerarImg(c);
   const a=document.createElement('a'); a.href=img; a.download=`laudo_${c.produtor||'cafe'}.png`; a.click();
@@ -1419,7 +1430,7 @@ async function shareEmail() {
 }
 
 async function sharePDF() {
-  const c = dados.find(x=>x.id===itemId); if(!c) return;
+  const c = buscarRegistro(itemId); if(!c) return;
   closeModal(); toastOk('Gerando PDF...');
   const img = await gerarImg(c);
   const win = window.open('','_blank');
@@ -1543,7 +1554,7 @@ function verDetalhe(id) {
 }
 
 async function sincItem() {
-  const r = dados.find(x=>x.id===itemId); if(!r) return;
+  const r = buscarRegistro(itemId); if(!r) return;
   closeModal(); await sincReg(r); renderHist();
 }
 
