@@ -475,6 +475,10 @@ body {
       <div id="hist-loading" style="display:none;text-align:center;padding:2rem;color:var(--text-light);font-size:14px">
         <div style="font-size:28px;margin-bottom:8px">⏳</div>Carregando classificações...
       </div>
+      <div style="position:relative;margin-bottom:1rem">
+        <input type="text" id="hist-busca" placeholder="🔍  Buscar por produtor, lote, bebida..." oninput="filtrarHist()" style="width:100%;padding:10px 14px;border:1px solid var(--border-mid);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--cream-dark);outline:none">
+        <button onclick="document.getElementById('hist-busca').value='';filtrarHist()" id="btn-limpar-busca" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:16px;cursor:pointer;color:var(--text-light);display:none">✕</button>
+      </div>
       <div id="hist-container">
         <div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação este mês.</p></div>
       </div>
@@ -669,8 +673,21 @@ async function carregarDoOneDrive(mesSel, anoSel) {
     for(let i = 1; i < rows.length; i++) {
       const r = rows[i];
       if(!r[3]) continue;
-      const partes = r[0] ? String(r[0]).split('/') : [];
-      const dataISO = partes.length===3 ? `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}` : '';
+      // r[0]: novo formato = só o dia (número ex: 15)
+      //        formato antigo = DD/MM/AAAA (retrocompatibilidade)
+      let dataISO = '';
+      const celula = String(r[0] || '').trim();
+      if(/^\d{1,2}$/.test(celula)) {
+        // Novo: reconstrói com mês da aba e ano do arquivo — sem ambiguidade
+        const mesIdx = MESES.indexOf(mes);
+        const diaStr = parseInt(celula).toString().padStart(2,'0');
+        const mesStr = String(mesIdx + 1).padStart(2,'0');
+        dataISO = `${ano}-${mesStr}-${diaStr}`;
+      } else if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(celula)) {
+        // Antigo: DD/MM/AAAA
+        const [d2,m2,a2] = celula.split('/');
+        dataISO = `${a2}-${m2.padStart(2,'0')}-${d2.padStart(2,'0')}`;
+      }
       const defeitosObj = {};
       if(r[14]) { String(r[14]).split('|').forEach(p => { const [k,v]=p.trim().split(':'); if(k&&v) defeitosObj[k.trim()]=parseInt(v)||0; }); }
       const isNovoFormato = r[6] && ['Beneficiado','Em Coco','Escolha'].includes(r[6]);
@@ -1171,13 +1188,13 @@ async function appendExcel(reg, fotoUrl) {
   let fileId = await getOrCreateExcel(pathArq, mes);
   await garantirAba(fileId, mes);
   const tl = reg.tipo==='beneficiado'?'Beneficiado':reg.tipo==='coco'?'Em Coco':'Escolha';
-  const df = d.toLocaleDateString('pt-BR');
+  const dia = d.getDate();
   const def = reg.defeitos ? Object.entries(reg.defeitos).map(([k,v])=>k+':'+v).join(' | ') : '';
   const impTotal = reg.tipo==='escolha' ? (
     (parseFloat(reg.impPau)||0) + (parseFloat(reg.impPedra)||0) + (parseFloat(reg.impCasca)||0)
   ).toFixed(2) : '';
   const linha = [
-    df, reg.clf||'', reg.lote||'', reg.produtor||'', reg.kg||'', reg.sacas||'', tl,
+    dia, reg.clf||'', reg.lote||'', reg.produtor||'', reg.kg||'', reg.sacas||'', tl,
     reg.catacao||'', reg.impureza||'', reg.umidade||'', reg.pen17||'', reg.penfundo||'',
     reg.renda||'', reg.bebida||'', reg.bebidaObs||'', def,
     reg.aprov||'', impTotal||'', reg.impPau||'', reg.impPedra||'', reg.impCasca||'',
@@ -1258,7 +1275,7 @@ async function garantirAba(fileId, mes) {
     }
     await new Promise(r=>setTimeout(r,3000));
   }
-  const cabHdrs = [['Data','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.']];
+  const cabHdrs = [['Dia','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.']];
   await new Promise(r=>setTimeout(r,1000));
   const checkHdr = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
@@ -1483,6 +1500,48 @@ function renderHist(mesSel, anoSel) {
   document.getElementById('hist-mes').textContent = mes + ' ' + ano;
   if(!lista.length) {
     c.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação em '+mes+' '+ano+'.</p></div>';
+    return;
+  }
+  c.innerHTML = '<div class="hist-list">'+[...lista].sort((a,b)=>b.id-a.id).map(r=>{
+    const tc = r.tipo==='beneficiado'?'tag-b':r.tipo==='coco'?'tag-c':'tag-e';
+    const tl = r.tipo==='beneficiado'?'Beneficiado':r.tipo==='coco'?'Em Coco':'Escolha';
+    const df = r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+    return `<div class="hist-item" onclick="verDetalhe(${r.id})">
+      <div class="hi-data">${df}</div>
+      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
+      <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="tag ${tc}">${tl}</span>
+        <span style="font-size:10px">${r.sinc?'🟢':'🟡'}</span>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+function filtrarHist() {
+  const termo = (document.getElementById('hist-busca')?.value || '').toLowerCase().trim();
+  const btnLimpar = document.getElementById('btn-limpar-busca');
+  if(btnLimpar) btnLimpar.style.display = termo ? 'block' : 'none';
+  // Usa o mesmo array que renderHist usaria para o mês/ano selecionado
+  const h = new Date();
+  const selMes = document.getElementById('hist-sel-mes')?.value || MESES[h.getMonth()];
+  const selAno = parseInt(document.getElementById('hist-sel-ano')?.value) || h.getFullYear();
+  const chaveCache = `${selMes}_${selAno}`;
+  const ehMesAtual = selMes === MESES[h.getMonth()] && selAno === h.getFullYear();
+  const base = ehMesAtual ? dados : (cacheHistorico[chaveCache] || []);
+  const lista = termo ? base.filter(r =>
+    (r.produtor||'').toLowerCase().includes(termo) ||
+    (r.lote||'').toLowerCase().includes(termo) ||
+    (r.bebida||'').toLowerCase().includes(termo) ||
+    (r.bebidaObs||'').toLowerCase().includes(termo) ||
+    (r.clf||'').toLowerCase().includes(termo) ||
+    (r.obs||'').toLowerCase().includes(termo)
+  ) : base;
+  const c = document.getElementById('hist-container');
+  if(!lista.length) {
+    c.innerHTML = termo
+      ? `<div class="empty"><div class="empty-icon">🔍</div><p>Nenhum resultado para "<strong>${termo}</strong>".</p></div>`
+      : `<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação em ${selMes} ${selAno}.</p></div>`;
     return;
   }
   c.innerHTML = '<div class="hist-list">'+[...lista].sort((a,b)=>b.id-a.id).map(r=>{
