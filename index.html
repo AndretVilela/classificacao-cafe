@@ -301,10 +301,9 @@ body {
     <div class="card">
       <div class="section-title">Classificador</div>
       <div class="classificador-row">
-        <div class="clf-btn" id="clf-outros" onclick="selectClf('','clf-outros')">
-          <div class="clf-avatar">?</div><div class="clf-name">Outros</div>
+        <div class="clf-btn" id="clf-jm1" onclick="selectClf('João Marcos','clf-jm1')">
+          <div class="clf-avatar">JM</div><div class="clf-name">João Marcos</div>
         </div>
-        <input type="text" id="clf-outros-nome" placeholder="Nome do classificador" style="display:none;margin-top:0.75rem;width:100%;padding:10px 14px;border:1.5px solid var(--border-mid);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text)" oninput="clf=this.value.trim()">
         <div class="clf-btn" id="clf-jm2" onclick="selectClf('João Marcelo','clf-jm2')">
           <div class="clf-avatar">JM</div><div class="clf-name">João Marcelo</div>
         </div>
@@ -381,16 +380,11 @@ body {
       </div>
       <div class="card">
         <div class="section-title">Foto da pauta</div>
-        <div class="photo-wrap" onclick="document.getElementById('photo-bc-gallery').click()">
-          <input type="file" id="photo-bc-camera"  accept="image/*" capture="environment" onchange="previewFoto(event,'prev-bc','icon-bc','hint-bc')" style="display:none">
-          <input type="file" id="photo-bc-gallery" accept="image/*" onchange="previewFoto(event,'prev-bc','icon-bc','hint-bc')" style="display:none">
+        <div class="photo-wrap" onclick="document.getElementById('photo-bc').click()">
+          <input type="file" id="photo-bc" accept="image/*" capture="environment" onchange="previewFoto(event,'prev-bc','icon-bc','hint-bc')" style="display:none">
           <div id="icon-bc" class="photo-icon-lbl">📷</div>
-          <p id="hint-bc" class="photo-hint">Toque para selecionar da galeria</p>
+          <p id="hint-bc" class="photo-hint">Toque para fotografar o café catado</p>
           <img class="photo-preview" id="prev-bc">
-        </div>
-        <div style="display:flex;gap:10px;margin-top:10px">
-          <button type="button" onclick="event.stopPropagation();document.getElementById('photo-bc-camera').click()" style="flex:1;padding:9px;border:1px solid var(--border-mid);border-radius:8px;background:var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">📷 Câmera</button>
-          <button type="button" onclick="event.stopPropagation();document.getElementById('photo-bc-gallery').click()" style="flex:1;padding:9px;border:1px solid var(--border-mid);border-radius:8px;background:var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">🖼️ Galeria / Arquivo</button>
         </div>
         <div class="form-group" style="margin-top:1rem"><label>Observações gerais</label><textarea id="f-obs-bc" placeholder="Anotações adicionais..."></textarea></div>
       </div>
@@ -437,16 +431,11 @@ body {
       </div>
       <div class="card">
         <div class="section-title">Foto da pauta</div>
-        <div class="photo-wrap" onclick="document.getElementById('photo-e-gallery').click()">
-          <input type="file" id="photo-e-camera"  accept="image/*" capture="environment" onchange="previewFoto(event,'prev-e','icon-e','hint-e')" style="display:none">
-          <input type="file" id="photo-e-gallery" accept="image/*" onchange="previewFoto(event,'prev-e','icon-e','hint-e')" style="display:none">
+        <div class="photo-wrap" onclick="document.getElementById('photo-e').click()">
+          <input type="file" id="photo-e" accept="image/*" capture="environment" onchange="previewFoto(event,'prev-e','icon-e','hint-e')" style="display:none">
           <div id="icon-e" class="photo-icon-lbl">📷</div>
-          <p id="hint-e" class="photo-hint">Toque para selecionar da galeria</p>
+          <p id="hint-e" class="photo-hint">Toque para fotografar o café catado</p>
           <img class="photo-preview" id="prev-e">
-        </div>
-        <div style="display:flex;gap:10px;margin-top:10px">
-          <button type="button" onclick="event.stopPropagation();document.getElementById('photo-e-camera').click()" style="flex:1;padding:9px;border:1px solid var(--border-mid);border-radius:8px;background:var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">📷 Câmera</button>
-          <button type="button" onclick="event.stopPropagation();document.getElementById('photo-e-gallery').click()" style="flex:1;padding:9px;border:1px solid var(--border-mid);border-radius:8px;background:var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">🖼️ Galeria / Arquivo</button>
         </div>
         <div class="form-group" style="margin-top:1rem"><label>Observações gerais</label><textarea id="f-obs-e" placeholder="Anotações adicionais..."></textarea></div>
       </div>
@@ -463,14 +452,12 @@ body {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
         <div>
           <div class="section-title" style="margin-bottom:2px">Classificações — <span id="hist-mes"></span></div>
-          <div style="font-size:12px;color:var(--text-light)">Histórico completo no OneDrive.</div>
+          <div style="font-size:12px;color:var(--text-light)">Mês atual. Histórico completo no OneDrive.</div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="hist-sel-mes" onchange="trocarMesHistorico()" style="padding:7px 10px;border:1px solid var(--border-mid);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--cream-dark);cursor:pointer">
-          </select>
-          <select id="hist-sel-ano" onchange="trocarMesHistorico()" style="padding:7px 10px;border:1px solid var(--border-mid);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--cream-dark);cursor:pointer">
-          </select>
-        </div>
+      </div>
+      <div style="position:relative;margin-bottom:1rem">
+        <input type="text" id="hist-busca" placeholder="🔍  Buscar por produtor, lote, bebida..." oninput="filtrarHist()" style="width:100%;padding:10px 14px 10px 14px;border:1px solid var(--border-mid);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--cream-dark);outline:none">
+        <button onclick="document.getElementById('hist-busca').value='';filtrarHist()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:16px;cursor:pointer;color:var(--text-light);display:none" id="btn-limpar-busca">✕</button>
       </div>
       <div id="hist-loading" style="display:none;text-align:center;padding:2rem;color:var(--text-light);font-size:14px">
         <div style="font-size:28px;margin-bottom:8px">⏳</div>Carregando classificações...
@@ -616,18 +603,16 @@ function salvarLocal() {
   try { localStorage.setItem(k, JSON.stringify(dados)); } catch(e) {}
 }
 
-const cacheHistorico = {}; // { 'Janeiro_2026': [...] }
-
-async function carregarDoOneDrive(mesSel, anoSel) {
+async function carregarDoOneDrive() {
   if(!msToken) return;
-  const h = new Date();
-  const mes = mesSel || MESES[h.getMonth()];
-  const ano = anoSel || h.getFullYear();
   setSinc('pending','Carregando...');
+  // Mostra loading no histórico se estiver na tela
   const loading = document.getElementById('hist-loading');
   const container = document.getElementById('hist-container');
   if(loading) { loading.style.display='block'; if(container) container.style.display='none'; }
   try {
+    const h = new Date();
+    const ano = h.getFullYear(), mes = MESES[h.getMonth()];
     const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     const nomeArq = `Classificacoes_${ano}.xlsx`;
     const pathArq = `${pastaRaiz}/${nomeArq}`;
@@ -636,7 +621,6 @@ async function carregarDoOneDrive(mesSel, anoSel) {
     const checkR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathArqEnc2}`,{headers:{Authorization:'Bearer '+msToken}});
     if(!checkR.ok) {
       console.log('[Histórico] Arquivo não encontrado, status:', checkR.status);
-      toastErr(`Arquivo ${nomeArq} não encontrado no OneDrive.`);
       setSinc('ok','Conectado'); return;
     }
     const fileData = await checkR.json();
@@ -649,13 +633,7 @@ async function carregarDoOneDrive(mesSel, anoSel) {
     const abasData = await abasR.json();
     const abas = (abasData.value||[]).map(s=>s.name);
     console.log('[Histórico] Abas encontradas:', abas, '| Buscando aba:', mes);
-    if(!abas.includes(mes)) {
-      setSinc('ok','Conectado');
-      toastOk('Sem classificações em ' + mes + ' ' + ano + '.');
-      cacheHistorico[`${mes}_${ano}`] = [];
-      renderHist(mes, ano);
-      return;
-    }
+    if(!abas.includes(mes)) { setSinc('ok','Conectado'); toastOk('Sem classificações em ' + mes + '.'); return; }
     const rangeR = await fetch(
       `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,
       {headers:{Authorization:'Bearer '+msToken}}
@@ -666,13 +644,27 @@ async function carregarDoOneDrive(mesSel, anoSel) {
     console.log('[Histórico] Linhas encontradas:', rows.length);
     if(rows.length <= 1) { setSinc('ok','Conectado'); return; }
     const dadosOneDrive = [];
+    const mesIdx = MESES.indexOf(mes); // índice 0-11 do mês da aba
     for(let i = 1; i < rows.length; i++) {
       const r = rows[i];
       if(!r[3]) continue;
-      const partes = r[0] ? String(r[0]).split('/') : [];
-      const dataISO = partes.length===3 ? `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}` : '';
+      // r[0] pode ser: dia (número, ex: 15) — novo formato
+      //                DD/MM/AAAA (string) — formato antigo
+      let dataISO = '';
+      const celula = String(r[0] || '').trim();
+      if(/^\d{1,2}$/.test(celula)) {
+        // Novo formato: só o dia — reconstrói com mês da aba e ano do arquivo
+        const dia = parseInt(celula).toString().padStart(2,'0');
+        const mesStr = String(mesIdx + 1).padStart(2,'0');
+        dataISO = `${ano}-${mesStr}-${dia}`;
+      } else if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(celula)) {
+        // Formato antigo DD/MM/AAAA — converte normalmente
+        const [d2,m2,a2] = celula.split('/');
+        dataISO = `${a2}-${m2.padStart(2,'0')}-${d2.padStart(2,'0')}`;
+      }
       const defeitosObj = {};
       if(r[14]) { String(r[14]).split('|').forEach(p => { const [k,v]=p.trim().split(':'); if(k&&v) defeitosObj[k.trim()]=parseInt(v)||0; }); }
+      // Detecta formato novo (col E = Kg, col F = Sacas/Arrobas) vs antigo (col E = Sacas, col F = Tipo)
       const isNovoFormato = r[6] && ['Beneficiado','Em Coco','Escolha'].includes(r[6]);
       const tipoNorm = isNovoFormato
         ? (r[6]==='Beneficiado'?'beneficiado':r[6]==='Em Coco'?'coco':'escolha')
@@ -708,11 +700,7 @@ async function carregarDoOneDrive(mesSel, anoSel) {
         fromCloud: true
       });
     }
-    // Salva no cache por mês/ano
-    cacheHistorico[`${mes}_${ano}`] = dadosOneDrive;
-    // Se for o mês atual, atualiza também o array principal
-    const hAgora = new Date();
-    if(mes === MESES[hAgora.getMonth()] && ano === hAgora.getFullYear()) {
+    if(dadosOneDrive.length > 0) {
       const chave = d => `${d.lote}|${d.produtor}|${d.data}`;
       const chavesCloud = new Set(dadosOneDrive.map(chave));
       const locaisNaoSinc = dados.filter(d => !d.sinc && !chavesCloud.has(chave(d)));
@@ -729,7 +717,7 @@ async function carregarDoOneDrive(mesSel, anoSel) {
   } finally {
     if(loading) loading.style.display = 'none';
     if(container) container.style.display = 'block';
-    renderHist(mes, ano);
+    renderHist();
   }
 }
 
@@ -805,28 +793,13 @@ function showScreen(n, btn) {
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('screen-'+n).classList.add('active');
   if(btn) btn.classList.add('active');
-  if(n==='historico') {
-    iniciarSeletorMes();
-    const mes = document.getElementById('hist-sel-mes')?.value;
-    const ano = parseInt(document.getElementById('hist-sel-ano')?.value);
-    renderHist(mes, ano);
-    if(msToken) carregarDoOneDrive(mes, ano).catch(()=>{});
-  }
+  if(n==='historico') { renderHist(); if(msToken) carregarDoOneDrive().catch(()=>{}); }
 }
 
 function selectClf(nome, id) {
   clf = nome;
   document.querySelectorAll('.clf-btn').forEach(b=>b.classList.remove('selected'));
   document.getElementById(id).classList.add('selected');
-  const outrosInput = document.getElementById('clf-outros-nome');
-  if(id === 'clf-outros') {
-    outrosInput.style.display = 'block';
-    outrosInput.focus();
-    clf = outrosInput.value.trim();
-  } else {
-    outrosInput.style.display = 'none';
-    outrosInput.value = '';
-  }
 }
 
 function selectTipo(t) {
@@ -1171,13 +1144,13 @@ async function appendExcel(reg, fotoUrl) {
   let fileId = await getOrCreateExcel(pathArq, mes);
   await garantirAba(fileId, mes);
   const tl = reg.tipo==='beneficiado'?'Beneficiado':reg.tipo==='coco'?'Em Coco':'Escolha';
-  const df = d.toLocaleDateString('pt-BR');
+  const dia = d.getDate(); // apenas o dia — mês vem da aba, ano vem do arquivo
   const def = reg.defeitos ? Object.entries(reg.defeitos).map(([k,v])=>k+':'+v).join(' | ') : '';
   const impTotal = reg.tipo==='escolha' ? (
     (parseFloat(reg.impPau)||0) + (parseFloat(reg.impPedra)||0) + (parseFloat(reg.impCasca)||0)
   ).toFixed(2) : '';
   const linha = [
-    df, reg.clf||'', reg.lote||'', reg.produtor||'', reg.kg||'', reg.sacas||'', tl,
+    dia, reg.clf||'', reg.lote||'', reg.produtor||'', reg.kg||'', reg.sacas||'', tl,
     reg.catacao||'', reg.impureza||'', reg.umidade||'', reg.pen17||'', reg.penfundo||'',
     reg.renda||'', reg.bebida||'', reg.bebidaObs||'', def,
     reg.aprov||'', impTotal||'', reg.impPau||'', reg.impPedra||'', reg.impCasca||'',
@@ -1258,7 +1231,7 @@ async function garantirAba(fileId, mes) {
     }
     await new Promise(r=>setTimeout(r,3000));
   }
-  const cabHdrs = [['Data','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.']];
+  const cabHdrs = [['Dia','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.']];
   await new Promise(r=>setTimeout(r,1000));
   const checkHdr = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
@@ -1378,19 +1351,8 @@ function textoLaudo(c) {
   return linhas.filter(l => l !== '').join('\n').replace(/\n{3,}/g,'\n\n');
 }
 
-function buscarRegistro(id) {
-  let r = dados.find(x=>x.id===id);
-  if(!r) {
-    for(const chave of Object.keys(cacheHistorico)) {
-      r = cacheHistorico[chave].find(x=>x.id===id);
-      if(r) break;
-    }
-  }
-  return r || null;
-}
-
 async function shareWA() {
-  const c = buscarRegistro(itemId); if(!c) return;
+  const c = dados.find(x=>x.id===itemId); if(!c) return;
   closeModal();
   toastOk('Gerando imagem...');
   const img = await gerarImg(c);
@@ -1418,7 +1380,7 @@ async function shareWA() {
 }
 
 async function shareEmail() {
-  const c = buscarRegistro(itemId); if(!c) return;
+  const c = dados.find(x=>x.id===itemId); if(!c) return;
   closeModal(); toastOk('Gerando imagem...');
   const img = await gerarImg(c);
   const a=document.createElement('a'); a.href=img; a.download=`laudo_${c.produtor||'cafe'}.png`; a.click();
@@ -1430,7 +1392,7 @@ async function shareEmail() {
 }
 
 async function sharePDF() {
-  const c = buscarRegistro(itemId); if(!c) return;
+  const c = dados.find(x=>x.id===itemId); if(!c) return;
   closeModal(); toastOk('Gerando PDF...');
   const img = await gerarImg(c);
   const win = window.open('','_blank');
@@ -1440,49 +1402,42 @@ async function sharePDF() {
 
 // ===== HISTÓRICO =====
 
-function iniciarSeletorMes() {
-  const h = new Date();
-  const selMes = document.getElementById('hist-sel-mes');
-  const selAno = document.getElementById('hist-sel-ano');
-  if(!selMes || !selAno) return;
-  // Popula meses
-  selMes.innerHTML = MESES.map((m,i) => `<option value="${m}"${i===h.getMonth()?' selected':''}>${m}</option>`).join('');
-  // Popula anos — do ano atual até 3 anos atrás
-  const anoAtual = h.getFullYear();
-  selAno.innerHTML = '';
-  for(let a = anoAtual; a >= anoAtual - 3; a--) {
-    selAno.innerHTML += `<option value="${a}"${a===anoAtual?' selected':''}>${a}</option>`;
-  }
-}
-
-function trocarMesHistorico() {
-  const mes = document.getElementById('hist-sel-mes')?.value;
-  const ano = parseInt(document.getElementById('hist-sel-ano')?.value);
-  if(!mes || !ano) return;
-  document.getElementById('hist-mes').textContent = mes + ' ' + ano;
-  const chaveCache = `${mes}_${ano}`;
-  if(cacheHistorico[chaveCache] !== undefined) {
-    // Já tem em cache — renderiza direto
-    renderHist(mes, ano);
-  } else {
-    // Busca no OneDrive
-    carregarDoOneDrive(mes, ano).catch(()=>{});
-  }
-}
-
-function renderHist(mesSel, anoSel) {
-  const h = new Date();
-  const mes = mesSel || MESES[h.getMonth()];
-  const ano = anoSel || h.getFullYear();
-  const chaveCache = `${mes}_${ano}`;
-  // Decide qual array usar: cache para meses anteriores, dados[] para mês atual
-  const hAgora = new Date();
-  const ehMesAtual = mes === MESES[hAgora.getMonth()] && ano === hAgora.getFullYear();
-  const lista = ehMesAtual ? dados : (cacheHistorico[chaveCache] || []);
+function renderHist() {
   const c = document.getElementById('hist-container');
-  document.getElementById('hist-mes').textContent = mes + ' ' + ano;
+  if(!dados.length) { c.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação este mês.</p></div>'; return; }
+  c.innerHTML = '<div class="hist-list">'+[...dados].sort((a,b)=>b.id-a.id).map(r=>{
+    const tc = r.tipo==='beneficiado'?'tag-b':r.tipo==='coco'?'tag-c':'tag-e';
+    const tl = r.tipo==='beneficiado'?'Beneficiado':r.tipo==='coco'?'Em Coco':'Escolha';
+    const df = r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+    return `<div class="hist-item" onclick="verDetalhe(${r.id})">
+      <div class="hi-data">${df}</div>
+      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
+      <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="tag ${tc}">${tl}</span>
+        <span style="font-size:10px">${r.sinc?'🟢':'🟡'}</span>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+function filtrarHist() {
+  const termo = (document.getElementById('hist-busca')?.value || '').toLowerCase().trim();
+  const btnLimpar = document.getElementById('btn-limpar-busca');
+  if(btnLimpar) btnLimpar.style.display = termo ? 'block' : 'none';
+  const lista = termo
+    ? dados.filter(r =>
+        (r.produtor||'').toLowerCase().includes(termo) ||
+        (r.lote||'').toLowerCase().includes(termo) ||
+        (r.bebida||'').toLowerCase().includes(termo) ||
+        (r.bebidaObs||'').toLowerCase().includes(termo) ||
+        (r.clf||'').toLowerCase().includes(termo) ||
+        (r.obs||'').toLowerCase().includes(termo)
+      )
+    : dados;
+  const c = document.getElementById('hist-container');
   if(!lista.length) {
-    c.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma classificação em '+mes+' '+ano+'.</p></div>';
+    c.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p>Nenhum resultado para "<strong>${termo}</strong>".</p></div>`;
     return;
   }
   c.innerHTML = '<div class="hist-list">'+[...lista].sort((a,b)=>b.id-a.id).map(r=>{
@@ -1500,17 +1455,7 @@ function renderHist(mesSel, anoSel) {
     </div>`;
   }).join('')+'</div>';
 }
-
-function verDetalhe(id) {
-  // Busca em dados[] e em todos os caches de meses anteriores
-  let c = dados.find(x=>x.id===id);
-  if(!c) {
-    for(const chave of Object.keys(cacheHistorico)) {
-      c = cacheHistorico[chave].find(x=>x.id===id);
-      if(c) break;
-    }
-  }
-  if(!c) return;
+  const c = dados.find(x=>x.id===id); if(!c) return;
   itemId = id;
   const tl = c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
   const df = c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
@@ -1554,7 +1499,7 @@ function verDetalhe(id) {
 }
 
 async function sincItem() {
-  const r = buscarRegistro(itemId); if(!r) return;
+  const r = dados.find(x=>x.id===itemId); if(!r) return;
   closeModal(); await sincReg(r); renderHist();
 }
 
@@ -1583,8 +1528,6 @@ function salvarPath() {
 function resetForm() {
   clf=''; tipo=''; selbBC={}; selbE={}; fotoBC=null; fotoE=null;
   document.querySelectorAll('.clf-btn,.tipo-card').forEach(el=>el.classList.remove('selected'));
-  const outrosInput = document.getElementById('clf-outros-nome');
-  if(outrosInput) { outrosInput.value=''; outrosInput.style.display='none'; }
   document.getElementById('form-bc').style.display='none';
   document.getElementById('form-e').style.display='none';
   document.getElementById('btn-salvar-row').style.display='none';
