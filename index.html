@@ -564,6 +564,7 @@ const TOKEN_KEY = 'cafe_ms_token';
 const TOKEN_EXP_KEY = 'cafe_ms_token_exp';
 
 let clf = '', tipo = '', selbBC = {}, selbE = {}, fotoBC = null, fotoE = null, itemId = null, msToken = null;
+let imgCache = {}; // dataURL pré-gerado por id, pra compartilhar sem perder a ativacao do usuario
 let tokenRefreshTimer = null;
 let clientId = localStorage.getItem('cafe_client_id') || CLIENT_ID;
 let tenantId = localStorage.getItem('cafe_tenant_id') || TENANT_ID;
@@ -1408,30 +1409,45 @@ function buscarRegistro(id) {
 
 async function shareWA() {
   const c = buscarRegistro(itemId); if(!c) return;
-  closeModal();
-  toastOk('Gerando imagem...');
-  const img = await gerarImg(c);
+  const id = itemId;
   const txt = textoLaudo(c);
 
-  // Tenta Web Share API (Android Chrome nativo — envia imagem + texto juntos)
-  try {
-    const blob = await (await fetch(img)).blob();
-    const file = new File([blob], 'laudo.png', {type:'image/png'});
-    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
-      await navigator.share({title:'Laudo de Classificação', text: txt, files:[file]});
-      return;
-    }
-  } catch(e) { /* fallback abaixo */ }
+  // Usa a imagem pré-gerada (disparada quando o modal abriu). Isso mantém o navigator.share()
+  // o mais próximo possível do clique, preservando a "ativação do usuário" exigida pelo navegador.
+  let img = imgCache[id];
+  if (img === undefined || img === null) {
+    // Ainda não terminou de gerar (clique muito rápido) ou falhou — gera agora mesmo,
+    // sabendo que isso pode custar a ativação e cair no fallback de texto.
+    closeModal();
+    toastOk('Gerando imagem...');
+    try { img = await gerarImg(c); } catch(e) { img = null; }
+  } else {
+    closeModal();
+  }
 
-  // Fallback: baixa a imagem e abre WhatsApp Web com o texto
-  const a = document.createElement('a');
-  a.href = img;
-  a.download = `laudo_${(c.produtor||'cafe').replace(/\s+/g,'_')}.png`;
-  a.click();
+  if (img) {
+    // Tenta Web Share API com arquivo (Android/Windows — envia imagem + texto direto pro app)
+    try {
+      const blob = await (await fetch(img)).blob();
+      const file = new File([blob], 'laudo.png', {type:'image/png'});
+      if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+        await navigator.share({title:'Laudo de Classificação', text: txt, files:[file]});
+        return;
+      }
+    } catch(e) { /* fallback abaixo */ }
+  }
+
+  // Fallback: baixa a imagem (se existir) e abre WhatsApp Web com o texto
+  if (img) {
+    const a = document.createElement('a');
+    a.href = img;
+    a.download = `laudo_${(c.produtor||'cafe').replace(/\s+/g,'_')}.png`;
+    a.click();
+  }
   setTimeout(() => {
     window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
-    toastOk('Imagem baixada! Abra o WhatsApp, cole o texto e anexe a imagem.');
-  }, 800);
+    toastOk(img ? 'Imagem baixada! Abra o WhatsApp, cole o texto e anexe a imagem.' : 'Não foi possível gerar a imagem. Enviando apenas o texto.');
+  }, img ? 800 : 0);
 }
 
 async function shareEmail() {
@@ -1610,6 +1626,12 @@ function verDetalhe(id) {
   document.getElementById('modal-foto').style.display = 'none'; // reseta antes de carregar
   document.getElementById('modal').classList.add('open');
   carregarFotoModal(c); // carrega foto de forma assíncrona
+
+  // Pré-gera a imagem de compartilhamento em background, assim que o modal abre.
+  // Isso evita que o clique em "Compartilhar WhatsApp" precise esperar rede + html2canvas,
+  // o que fazia o navegador perder a "ativação do usuário" e cair no fallback de texto.
+  imgCache[id] = null;
+  gerarImg(c).then(img => { imgCache[id] = img; }).catch(() => { imgCache[id] = null; });
 }
 
 async function sincItem() {
@@ -1617,7 +1639,10 @@ async function sincItem() {
   closeModal(); await sincReg(r); renderHist();
 }
 
-function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  if (itemId !== null) delete imgCache[itemId];
+}
 function updateBadge() { document.getElementById('badge').textContent = dados.length; }
 function setSinc(t, msg) {
   const w=document.getElementById('sync-wrap'), d=document.getElementById('sync-dot'), tx=document.getElementById('sync-txt');
