@@ -1150,7 +1150,12 @@ async function buscarFotoOneDrive(path) {
     const pathEnc = path.split('/').map(p => encodeURIComponent(p)).join('/');
     const url = `https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}:/content`;
     console.log('[buscarFoto] GET', url);
-    const r = await fetch(url, {headers:{Authorization:'Bearer '+msToken}});
+    // Timeout de 6s: um token expirado ou rede ruim não pode travar a geração do laudo
+    // e estourar a janela de ativação do usuário exigida pelo navigator.share().
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 6000);
+    const r = await fetch(url, {headers:{Authorization:'Bearer '+msToken}, signal: ctrl.signal});
+    clearTimeout(to);
     console.log('[buscarFoto] Status:', r.status);
     if(!r.ok) { const e = await r.json().catch(()=>{}); console.warn('[buscarFoto] Erro:', e); return null; }
     const blob = await r.blob();
@@ -1160,7 +1165,7 @@ async function buscarFotoOneDrive(path) {
       fr.readAsDataURL(blob);
     });
   } catch(e) {
-    console.warn('[buscarFoto] Exceção:', path, e);
+    console.warn('[buscarFoto] Exceção ou timeout:', path, e);
     return null;
   }
 }
@@ -1354,7 +1359,10 @@ async function gerarImg(c) {
   }
   try {
     card.innerHTML = buildCard({...c, foto: fotoSrc});
-    await new Promise(r=>setTimeout(r,400));
+    // Só precisa esperar o DOM assentar se tiver uma <img> real pra carregar.
+    // Sem foto, não há nada pra esperar — cada milissegundo aqui é tempo a menos
+    // dentro da janela de ativação do usuário exigida pelo navigator.share().
+    if(fotoSrc) await new Promise(r=>setTimeout(r,400));
     const canvas = await html2canvas(card,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
     return canvas.toDataURL('image/png');
   } catch(e) {
@@ -1429,9 +1437,10 @@ async function shareWA() {
   // Usa a imagem pré-gerada (disparada quando o modal abriu). Isso mantém o navigator.share()
   // o mais próximo possível do clique, preservando a "ativação do usuário" exigida pelo navegador.
   let img = imgCache[id];
+  let viaCache = true;
   if (img === undefined || img === null) {
-    // Ainda não terminou de gerar (clique muito rápido) ou falhou — gera agora mesmo,
-    // sabendo que isso pode custar a ativação e cair no fallback de texto.
+    // Ainda não terminou de gerar (clique muito rápido) ou falhou — gera agora mesmo.
+    viaCache = false;
     closeModal();
     toastOk('Gerando imagem...');
     try { img = await gerarImg(c); } catch(e) { img = null; }
@@ -1439,7 +1448,12 @@ async function shareWA() {
     closeModal();
   }
 
-  if (img) {
+  // Importante: só tenta o compartilhamento nativo (imagem + texto no mesmo share sheet)
+  // quando a imagem já veio pronta do cache. Se precisou gerar agora (viaCache=false),
+  // o navegador já perdeu a "ativação do usuário" nesse meio tempo (rede + render) —
+  // chamar navigator.share() aqui é praticamente garantido de falhar em silêncio,
+  // só atrasando ainda mais o usuário até cair no fallback manual abaixo.
+  if (img && viaCache) {
     // Tenta Web Share API com arquivo (Android/Windows — envia imagem + texto direto pro app)
     try {
       const blob = await (await fetch(img)).blob();
