@@ -1323,8 +1323,12 @@ function buildCard(c) {
     if(imp) itens.push(['Impureza',imp]);
   }
   const grid = itens.map(([l,v])=>`<div class="sc-item"><div class="sc-item-lbl">${l}</div><div class="sc-item-val">${v}</div></div>`).join('');
-  const srcFoto = c.foto || c.fotoUrl || '';
-  const fotoHtml = srcFoto ? `<img class="sc-foto" src="${srcFoto}" crossorigin="anonymous">` : `<div class="sc-no-foto">☕</div>`;
+  // Importante: aqui só usamos c.foto (já resolvido para base64 pelo gerarImg).
+  // c.fotoUrl é apenas o PATH no OneDrive, não uma src utilizável em <img> — usá-lo
+  // aqui derrubava o html2canvas inteiro quando a busca da foto falhava (token
+  // expirado, etc.), fazendo o laudo inteiro sumir e sobrar só o texto.
+  const srcFoto = c.foto || '';
+  const fotoHtml = srcFoto ? `<img class="sc-foto" src="${srcFoto}">` : `<div class="sc-no-foto">☕</div>`;
   const bebHtml = c.bebida?`<div class="sc-bebida"><div class="sc-bebida-lbl">Bebida</div><div class="sc-bebida-val">${c.bebida}${c.bebidaObs?' · '+c.bebidaObs:''}</div></div>`:'';
   const obsHtml = c.obs?`<div class="sc-obs">${c.obs}</div>`:'';
   return `<div class="sc-head"><div class="sc-head-icon">☕</div><div><div class="sc-head-title">Laudo de Classificação</div><div class="sc-head-sub">${df} · ${c.clf||''}</div></div></div>
@@ -1348,10 +1352,20 @@ async function gerarImg(c) {
     const path = c.fotoPath || c.fotoUrl || '';
     if(path) fotoSrc = await buscarFotoOneDrive(path) || '';
   }
-  card.innerHTML = buildCard({...c, foto: fotoSrc});
-  await new Promise(r=>setTimeout(r,400));
-  const canvas = await html2canvas(card,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
-  return canvas.toDataURL('image/png');
+  try {
+    card.innerHTML = buildCard({...c, foto: fotoSrc});
+    await new Promise(r=>setTimeout(r,400));
+    const canvas = await html2canvas(card,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    return canvas.toDataURL('image/png');
+  } catch(e) {
+    console.warn('[gerarImg] Falha ao renderizar com foto, gerando sem foto para não perder o laudo:', e);
+    if(!fotoSrc) throw e; // já era sem foto e mesmo assim falhou — erro real, propaga
+    // Rede-gera sem a foto: melhor entregar o laudo sem imagem do café do que não entregar nada
+    card.innerHTML = buildCard({...c, foto: ''});
+    await new Promise(r=>setTimeout(r,200));
+    const canvas = await html2canvas(card,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    return canvas.toDataURL('image/png');
+  }
 }
 
 function textoLaudo(c) {
