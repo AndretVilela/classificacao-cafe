@@ -564,7 +564,7 @@ const TOKEN_KEY = 'cafe_ms_token';
 const TOKEN_EXP_KEY = 'cafe_ms_token_exp';
 
 let clf = '', tipo = '', selbBC = {}, selbE = {}, fotoBC = null, fotoE = null, itemId = null, msToken = null;
-let imgCache = {}; // dataURL pré-gerado por id, pra compartilhar sem perder a ativacao do usuario
+let fotoCache = {}; // foto crua (dataURL) pré-carregada por id, pra compartilhar no WhatsApp sem perder a ativacao do usuario
 let tokenRefreshTimer = null;
 let clientId = localStorage.getItem('cafe_client_id') || CLIENT_ID;
 let tenantId = localStorage.getItem('cafe_tenant_id') || TENANT_ID;
@@ -1170,19 +1170,15 @@ async function buscarFotoOneDrive(path) {
   }
 }
 
-// Exibe a foto no modal — usa base64 local se disponível, senão busca no OneDrive
+// Exibe a foto no modal E alimenta o fotoCache usado pelo compartilhamento no WhatsApp —
+// uma única busca serve os dois propósitos, em vez de buscar a mesma foto duas vezes.
 async function carregarFotoModal(reg) {
   const fi = document.getElementById('modal-foto');
   fi.style.display = 'none';
-  // 1. Base64 local — instantâneo
-  if(reg.foto) { fi.src = reg.foto; fi.style.display = 'block'; return; }
-  // 2. Path salvo — busca no OneDrive
-  const path = reg.fotoPath || reg.fotoUrl || '';
-  console.log('[Foto] fotoPath:', reg.fotoPath, '| fotoUrl:', reg.fotoUrl, '| path usado:', path);
-  if(!path) { console.log('[Foto] Sem path disponível.'); return; }
-  const src = await buscarFotoOneDrive(path);
-  if(src) { fi.src = src; fi.style.display = 'block'; }
-  else { console.log('[Foto] buscarFotoOneDrive retornou null para:', path); }
+  const foto = await resolverFoto(reg);
+  fotoCache[reg.id] = foto;
+  if(foto) { fi.src = foto; fi.style.display = 'block'; }
+  else { console.log('[Foto] Não foi possível carregar foto para o registro', reg.id); }
 }
 
 async function appendExcel(reg, fotoUrl) {
@@ -1349,14 +1345,20 @@ ${fotoHtml}
 <div class="sc-foot">Café Vilela · Classificação · ${new Date().getFullYear()}</div>`;
 }
 
-async function gerarImg(c) {
-  const card = document.getElementById('share-card');
-  // Resolve a foto: base64 local → OneDrive pelo path
+// Resolve a foto crua do registro: base64 local (se acabou de ser tirada) → busca no OneDrive pelo path.
+// Usada tanto pelo card formatado (email/PDF) quanto pelo compartilhamento direto no WhatsApp.
+async function resolverFoto(c) {
   let fotoSrc = c.foto || '';
   if(!fotoSrc) {
     const path = c.fotoPath || c.fotoUrl || '';
     if(path) fotoSrc = await buscarFotoOneDrive(path) || '';
   }
+  return fotoSrc || null;
+}
+
+async function gerarImg(c) {
+  const card = document.getElementById('share-card');
+  const fotoSrc = await resolverFoto(c) || '';
   try {
     card.innerHTML = buildCard({...c, foto: fotoSrc});
     // Só precisa esperar o DOM assentar se tiver uma <img> real pra carregar.
@@ -1434,30 +1436,30 @@ async function shareWA() {
   const id = itemId;
   const txt = textoLaudo(c);
 
-  // Usa a imagem pré-gerada (disparada quando o modal abriu). Isso mantém o navigator.share()
-  // o mais próximo possível do clique, preservando a "ativação do usuário" exigida pelo navegador.
-  let img = imgCache[id];
+  // Usa a foto crua pré-carregada (disparada quando o modal abriu) — sem montar o card
+  // formatado (isso tirou o html2canvas do caminho, que era a parte mais lenta e o que
+  // fazia o app perder a janela de ativação do usuário exigida pelo navigator.share()).
+  let foto = fotoCache[id];
   let viaCache = true;
-  if (img === undefined || img === null) {
-    // Ainda não terminou de gerar (clique muito rápido) ou falhou — gera agora mesmo.
+  if (foto === undefined || foto === null) {
+    // Ainda não terminou de carregar (clique muito rápido) ou falhou — busca agora mesmo.
     viaCache = false;
     closeModal();
-    toastOk('Gerando imagem...');
-    try { img = await gerarImg(c); } catch(e) { img = null; }
+    toastOk('Carregando foto...');
+    try { foto = await resolverFoto(c); } catch(e) { foto = null; }
   } else {
     closeModal();
   }
 
-  // Importante: só tenta o compartilhamento nativo (imagem + texto no mesmo share sheet)
-  // quando a imagem já veio pronta do cache. Se precisou gerar agora (viaCache=false),
-  // o navegador já perdeu a "ativação do usuário" nesse meio tempo (rede + render) —
-  // chamar navigator.share() aqui é praticamente garantido de falhar em silêncio,
-  // só atrasando ainda mais o usuário até cair no fallback manual abaixo.
-  if (img && viaCache) {
-    // Tenta Web Share API com arquivo (Android/Windows — envia imagem + texto direto pro app)
+  // Só tenta o compartilhamento nativo (foto + texto no mesmo share sheet) quando a foto
+  // já veio pronta do cache. Se precisou buscar agora (viaCache=false), o navegador pode
+  // já ter perdido a ativação nesse meio tempo — tentar navigator.share() aqui arrisca
+  // falhar em silêncio, só atrasando o fallback manual abaixo.
+  if (foto && viaCache) {
     try {
-      const blob = await (await fetch(img)).blob();
-      const file = new File([blob], 'laudo.png', {type:'image/png'});
+      const blob = await (await fetch(foto)).blob();
+      const ext = blob.type === 'image/png' ? 'png' : 'jpg';
+      const file = new File([blob], `foto_laudo.${ext}`, {type: blob.type || 'image/jpeg'});
       if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
         await navigator.share({title:'Laudo de Classificação', text: txt, files:[file]});
         return;
@@ -1465,17 +1467,17 @@ async function shareWA() {
     } catch(e) { /* fallback abaixo */ }
   }
 
-  // Fallback: baixa a imagem (se existir) e abre WhatsApp Web com o texto
-  if (img) {
+  // Fallback: baixa a foto (se existir) e abre WhatsApp Web com o texto
+  if (foto) {
     const a = document.createElement('a');
-    a.href = img;
-    a.download = `laudo_${(c.produtor||'cafe').replace(/\s+/g,'_')}.png`;
+    a.href = foto;
+    a.download = `foto_${(c.produtor||'cafe').replace(/\s+/g,'_')}.jpg`;
     a.click();
   }
   setTimeout(() => {
     window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
-    toastOk(img ? 'Imagem baixada! Abra o WhatsApp, cole o texto e anexe a imagem.' : 'Não foi possível gerar a imagem. Enviando apenas o texto.');
-  }, img ? 800 : 0);
+    toastOk(foto ? 'Foto baixada! Abra o WhatsApp, cole o texto e anexe a foto.' : 'Não foi possível carregar a foto. Enviando apenas o texto.');
+  }, foto ? 800 : 0);
 }
 
 async function shareEmail() {
@@ -1653,13 +1655,11 @@ function verDetalhe(id) {
   document.getElementById('share-section').style.display = 'block';
   document.getElementById('modal-foto').style.display = 'none'; // reseta antes de carregar
   document.getElementById('modal').classList.add('open');
-  carregarFotoModal(c); // carrega foto de forma assíncrona
-
-  // Pré-gera a imagem de compartilhamento em background, assim que o modal abre.
-  // Isso evita que o clique em "Compartilhar WhatsApp" precise esperar rede + html2canvas,
-  // o que fazia o navegador perder a "ativação do usuário" e cair no fallback de texto.
-  imgCache[id] = null;
-  gerarImg(c).then(img => { imgCache[id] = img; }).catch(() => { imgCache[id] = null; });
+  // Carrega a foto de forma assíncrona (exibe no modal E alimenta o fotoCache do
+  // compartilhamento no WhatsApp, assim que o modal abre — antes do usuário clicar em
+  // "Compartilhar", pra não perder a ativação do usuário esperando rede na hora do clique).
+  fotoCache[id] = null;
+  carregarFotoModal(c);
 }
 
 async function sincItem() {
@@ -1669,7 +1669,7 @@ async function sincItem() {
 
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
-  if (itemId !== null) delete imgCache[itemId];
+  if (itemId !== null) delete fotoCache[itemId];
 }
 function updateBadge() { document.getElementById('badge').textContent = dados.length; }
 function setSinc(t, msg) {
