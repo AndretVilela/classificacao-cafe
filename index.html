@@ -1488,11 +1488,12 @@ async function shareWA() {
     closeModal();
   }
 
-  // Só tenta o compartilhamento nativo (foto + texto no mesmo share sheet) quando a foto
-  // já veio pronta do cache. Se precisou buscar agora (viaCache=false), o navegador pode
-  // já ter perdido a ativação nesse meio tempo — tentar navigator.share() aqui arrisca
-  // falhar em silêncio, só atrasando o fallback manual abaixo.
-  if (foto && viaCache) {
+  // Tenta o compartilhamento nativo (foto + texto no mesmo share sheet) sempre que há
+  // foto disponível — seja do cache pronto ou buscada agora mesmo. Bloquear essa tentativa
+  // só porque a busca foi "ao vivo" era uma suposição pessimista sobre perda de ativação
+  // do usuário; na prática a busca costuma ser rápida o bastante pra não perder nada, e
+  // o próprio navigator.share() já recusa sozinho se a ativação realmente tiver expirado.
+  if (foto) {
     try {
       const blob = await (await fetch(foto)).blob();
       const ext = blob.type === 'image/png' ? 'png' : 'jpg';
@@ -1500,8 +1501,12 @@ async function shareWA() {
       if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
         await navigator.share({title:'Laudo de Classificação', text: txt, files:[file]});
         return;
+      } else {
+        console.warn('[shareWA] navigator.share/canShare indisponível ou recusou o arquivo. viaCache=', viaCache);
       }
-    } catch(e) { /* fallback abaixo */ }
+    } catch(e) {
+      console.warn('[shareWA] navigator.share falhou:', e.name, e.message, '| viaCache=', viaCache);
+    }
   }
 
   // Fallback: baixa a foto (se existir) e abre WhatsApp Web com o texto
