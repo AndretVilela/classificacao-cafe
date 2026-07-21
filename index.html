@@ -566,6 +566,7 @@ const TOKEN_EXP_KEY = 'cafe_ms_token_exp';
 let clf = '', tipo = '', selbBC = {}, selbE = {}, fotoBC = null, fotoE = null, itemId = null, msToken = null;
 let fotoCache = {}; // foto crua (dataURL) pré-carregada por id, pra compartilhar no WhatsApp sem perder a ativacao do usuario
 let tokenRefreshTimer = null;
+let falhasRefresh = 0; // renovações silenciosas seguidas que falharam
 let clientId = localStorage.getItem('cafe_client_id') || CLIENT_ID;
 let tenantId = localStorage.getItem('cafe_tenant_id') || TENANT_ID;
 let odPath = localStorage.getItem('cafe_od_path') || 'Classificação';
@@ -601,19 +602,45 @@ function silentRefresh() {
   iframe.style.display = 'none';
   const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(MS_SCOPES)}&prompt=none&login_hint=${encodeURIComponent(LOGIN_HINT)}&response_mode=fragment`;
   iframe.src = url;
+  let renovou = false;
   iframe.onload = () => {
     try {
       const hash = iframe.contentWindow.location.hash;
       const p = new URLSearchParams(hash.substring(1));
       const t = p.get('access_token');
       const exp = p.get('expires_in');
-      if(t) { msToken = t; salvarToken(t, exp); agendarRefresh(exp); console.log('Token renovado silenciosamente.'); }
+      if(t) {
+        renovou = true;
+        falhasRefresh = 0;
+        msToken = t; salvarToken(t, exp); agendarRefresh(exp);
+        console.log('Token renovado silenciosamente.');
+      }
     } catch(e) {
       // cross-origin block após redirect — token ainda pode ser válido
     }
     document.body.removeChild(iframe);
+    // CRÍTICO: se não renovou, precisa tentar de novo mais tarde. Sem isso, uma única
+    // falha (ex: cookie de terceiros bloqueado pelo navegador, sessão da Microsoft
+    // expirada) deixava o token morto pro resto da sessão, sem avisar ninguém — o app
+    // continuava mostrando "Conectado" enquanto toda busca de foto falhava calada.
+    if(!renovou) tratarFalhaRefresh();
   };
   document.body.appendChild(iframe);
+}
+
+function tratarFalhaRefresh() {
+  falhasRefresh++;
+  console.warn('[silentRefresh] Falhou (tentativa ' + falhasRefresh + ' seguida). Tentando de novo em 2 min.');
+  if(falhasRefresh >= 2) {
+    // Duas falhas seguidas: bem provável que a sessão da Microsoft expirou de verdade
+    // (ou o navegador está bloqueando o iframe) e precisa de login manual. Avisa
+    // visivelmente em vez de deixar o app degradar em silêncio.
+    const statusEl = document.getElementById('cfg-status');
+    if(statusEl) { statusEl.textContent = 'Sessão pode ter expirado — reconecte em Configurações.'; statusEl.style.color = '#C62828'; }
+    setSinc('error', 'Sessão expirada');
+  }
+  if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+  tokenRefreshTimer = setTimeout(()=>{ silentRefresh(); }, 120000); // tenta de novo em 2 min
 }
 
 function salvarLocal() {
@@ -1157,7 +1184,17 @@ async function buscarFotoOneDrive(path) {
     const r = await fetch(url, {headers:{Authorization:'Bearer '+msToken}, signal: ctrl.signal});
     clearTimeout(to);
     console.log('[buscarFoto] Status:', r.status);
-    if(!r.ok) { const e = await r.json().catch(()=>{}); console.warn('[buscarFoto] Erro:', e); return null; }
+    if(!r.ok) {
+      const e = await r.json().catch(()=>{});
+      console.warn('[buscarFoto] Erro:', e);
+      if(r.status === 401) {
+        // Sinal inequívoco de token morto — não espera o timer agendado, tenta
+        // renovar agora mesmo em segundo plano (não bloqueia esta chamada, que já falhou).
+        console.warn('[buscarFoto] Token parece inválido (401). Disparando renovação imediata.');
+        silentRefresh();
+      }
+      return null;
+    }
     const blob = await r.blob();
     return await new Promise(res => {
       const fr = new FileReader();
