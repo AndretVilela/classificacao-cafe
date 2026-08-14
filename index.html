@@ -97,6 +97,17 @@ body {
 .calc-item-val { font-size:20px; font-weight:600; color:var(--cafe); }
 .calc-item-unit { font-size:12px; color:var(--text-mid); }
 
+/* ORIGEM DO CAFÉ (Pé / Varreção) */
+.origem-row { display: flex; gap: 10px; margin-top: 0.85rem; }
+.origem-btn {
+  flex: 1; border: 1.5px solid var(--border);
+  background: var(--cream); border-radius: 12px;
+  padding: 0.75rem; text-align: center; cursor: pointer; transition: all 0.15s;
+  font-family: 'DM Sans',sans-serif; font-size: 14px; color: var(--text);
+}
+.origem-btn:hover { border-color: var(--cafe-light); background: #FDF6EF; }
+.origem-btn.selected { border-color: var(--cafe-mid); background: #FDF6EF; box-shadow: 0 0 0 3px rgba(107,66,38,0.1); font-weight: 500; color: var(--cafe); }
+
 /* TIPO SELECTOR */
 .tipo-selector { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1.5rem; }
 .tipo-card {
@@ -315,6 +326,13 @@ body {
         <div class="form-group"><label>Nº Lote / NF</label><input type="text" id="f-lote" placeholder="Ex: NF-2026-001"></div>
         <div class="form-group"><label>Produtor / Fazenda</label><input type="text" id="f-produtor" placeholder="Nome do produtor"></div>
         <div class="form-group"><label>Quantidade (kg)</label><input type="number" id="f-kg" placeholder="0" min="0" step="0.01" oninput="calcVolume()"></div>
+      </div>
+      <div class="form-group" style="margin-top:0.85rem">
+        <label>Origem do café</label>
+        <div class="origem-row">
+          <div class="origem-btn" id="origem-pe" onclick="selectOrigem('pe')">🌳 Café do Pé</div>
+          <div class="origem-btn" id="origem-varricao" onclick="selectOrigem('varricao')">🧹 Café de Varreção</div>
+        </div>
       </div>
       <!-- Resultado do cálculo — aparece após selecionar o tipo -->
       <div id="calc-volume" style="display:none;margin-top:1rem;background:var(--cream-dark);border-radius:10px;padding:0.9rem 1.2rem;display:none">
@@ -563,7 +581,7 @@ const MS_SCOPES = 'Files.ReadWrite User.Read offline_access';
 const TOKEN_KEY = 'cafe_ms_token';
 const TOKEN_EXP_KEY = 'cafe_ms_token_exp';
 
-let clf = '', tipo = '', selbBC = {}, selbE = {}, fotoBC = null, fotoE = null, itemId = null, msToken = null;
+let clf = '', tipo = '', origem = '', selbBC = {}, selbE = {}, fotoBC = null, fotoE = null, itemId = null, msToken = null;
 let fotoCache = {}; // foto crua (dataURL) pré-carregada por id, pra compartilhar no WhatsApp sem perder a ativacao do usuario
 let tokenRefreshTimer = null;
 let falhasRefresh = 0; // renovações silenciosas seguidas que falharam
@@ -749,6 +767,7 @@ async function carregarDoOneDrive(mesSel, anoSel) {
         fotoPath:  isNovoFormato ? (r[22] || '') : (r[21] || ''),
         arrobas:   isNovoFormato ? (r[23] || '') : '',
         prevSacas: isNovoFormato ? (r[24] || '') : '',
+        origem:    r[25] || '',
         sinc: true,
         fromCloud: true
       });
@@ -811,7 +830,18 @@ function init() {
   updateBadge();
   setFormularioBloqueado(true); // começa bloqueado até confirmar conexão
   checkToken();
+  // Retry periódico: mesmo que o app fique aberto o dia inteiro numa tela, qualquer
+  // classificação que ficou pendente (sinc:false) tem nova chance de sincronizar
+  // a cada 3 minutos, sem precisar que alguém abra o histórico e clique manualmente.
+  setInterval(() => { if(msToken) sincronizarPendentes(); }, 180000);
 }
+
+// Quando o dispositivo volta a ter internet (tablet no talhão sem sinal, por exemplo),
+// revalida a conexão de verdade e dispara a sincronização de tudo que ficou pendente.
+window.addEventListener('online', () => {
+  if(!msToken) return;
+  verificarConexaoViva().then(ok => { if(ok) sincronizarPendentes(); });
+});
 
 function buildBebidas(g) {
   document.getElementById('beb-' + g).innerHTML = BEBIDAS.map(b =>
@@ -872,6 +902,12 @@ function selectClf(nome, id) {
     outrosInput.style.display = 'none';
     outrosInput.value = '';
   }
+}
+
+function selectOrigem(o) {
+  origem = o;
+  document.querySelectorAll('.origem-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('origem-'+o).classList.add('selected');
 }
 
 function selectTipo(t) {
@@ -963,7 +999,20 @@ async function salvar() {
     }
   }
   if(!tipo) { alert('Selecione o tipo de café.'); return; }
+  if(!origem) { alert('Selecione a origem do café: Pé ou Varreção.'); return; }
   if(!document.getElementById('f-produtor').value) { alert('Informe o produtor/fazenda.'); return; }
+
+  // Checa conexão de verdade (não confia numa variável em memória que pode estar
+  // com token morto) ANTES de qualquer coisa. Se falhar, nada no formulário é tocado —
+  // o usuário só corrige a conexão e clica em Salvar de novo, sem digitar tudo outra vez.
+  const btnSalvarEl = document.querySelector('#btn-salvar-row .btn-primary');
+  if(btnSalvarEl) { btnSalvarEl.disabled = true; btnSalvarEl.textContent = 'Verificando conexão...'; }
+  const conectado = await verificarConexaoViva();
+  if(btnSalvarEl) { btnSalvarEl.disabled = false; btnSalvarEl.textContent = 'Salvar Classificação'; }
+  if(!conectado) {
+    toastErr('Sem conexão confirmada com o Microsoft 365. Nada foi perdido — os dados continuam preenchidos. Verifique a conexão e clique em Salvar novamente.');
+    return;
+  }
 
   const kg = parseFloat(document.getElementById('f-kg').value) || 0;
   const sacasCalc = tipo !== 'coco' ? (kg / 60) : 0;
@@ -980,6 +1029,7 @@ async function salvar() {
     sacas: tipo !== 'coco' ? sacasCalc.toFixed(2) : arrobasCalc.toFixed(2),
     arrobas: arrobasCalc > 0 ? arrobasCalc.toFixed(2) : '',
     prevSacas: prevSacasCalc > 0 ? prevSacasCalc.toFixed(2) : '',
+    origem: origem==='pe' ? 'Pé' : 'Varreção',
     tipo, clf, sinc: false
   };
 
@@ -1007,11 +1057,6 @@ async function salvar() {
     foto: fotoE
   };
 
-  if(!msToken) {
-    toastErr('Sem conexão com Microsoft. Conecte antes de salvar.');
-    return;
-  }
-
   const reg = {...base, ...extra};
   dados.unshift(reg);
   salvarLocal();
@@ -1022,6 +1067,57 @@ async function salvar() {
 }
 
 // ===== MICROSOFT GRAPH =====
+
+// Verifica de verdade se a conexão está viva, fazendo uma chamada real à API —
+// nunca confia só na variável msToken estar preenchida, porque um token pode estar
+// "presente" na memória e mesmo assim morto (expirado, revogado, refresh silencioso
+// que falhou sem avisar). Se o token estiver morto, tenta renovar uma vez antes de
+// desistir. Retorna true/false — nunca lança exceção, nunca mexe no formulário.
+async function verificarConexaoViva(jaTentouRefresh) {
+  if(!msToken) return false;
+  try {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 5000);
+    const r = await fetch('https://graph.microsoft.com/v1.0/me', {
+      headers: {Authorization: 'Bearer ' + msToken}, signal: ctrl.signal
+    });
+    clearTimeout(to);
+    if(r.ok) return true;
+    if(r.status === 401 && !jaTentouRefresh) {
+      // Token morto — tenta renovar silenciosamente uma vez antes de desistir
+      await new Promise(res => { silentRefresh(); setTimeout(res, 4000); });
+      return verificarConexaoViva(true);
+    }
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXP_KEY);
+    setDesconectado();
+    return false;
+  } catch(e) {
+    // Falha de rede (offline, timeout) — não mexe no token guardado, pode ser
+    // instabilidade momentânea. Só informa que não foi possível confirmar agora.
+    return false;
+  }
+}
+
+// Varre os registros locais marcados como não sincronizados (sinc:false) e tenta
+// gravá-los no Excel/OneDrive de novo. É isso que garante que uma classificação que
+// falhou ao sincronizar (conexão caiu no meio do salvamento) não fique perdida
+// silenciosamente — ela continua tentando sozinha a cada reconexão, a cada volta
+// de "online" e periodicamente enquanto o app estiver conectado.
+let sincronizandoPendentes = false;
+async function sincronizarPendentes() {
+  if(!msToken || sincronizandoPendentes) return;
+  const pendentes = dados.filter(d => !d.sinc);
+  if(!pendentes.length) return;
+  sincronizandoPendentes = true;
+  toastOk(pendentes.length + ' classificação(ões) pendente(s) — sincronizando...');
+  for(const reg of pendentes) {
+    try { await sincReg(reg); }
+    catch(e) { console.warn('[sincronizarPendentes] Falhou para', reg.id, e); }
+  }
+  sincronizandoPendentes = false;
+  updateBadge();
+}
 
 function checkToken() {
   // 1. Verifica se veio token na URL (após login)
@@ -1070,6 +1166,7 @@ function onConnected() {
   setSinc('ok','Conectado');
   setFormularioBloqueado(false);
   carregarDoOneDrive().catch(()=>{});
+  sincronizarPendentes();
 }
 
 function setDesconectado() {
@@ -1238,7 +1335,7 @@ async function appendExcel(reg, fotoUrl) {
     reg.renda||'', reg.bebida||'', reg.bebidaObs||'', def,
     reg.aprov||'', impTotal||'', reg.impPau||'', reg.impPedra||'', reg.impCasca||'',
     reg.obs||'', fotoUrl,
-    reg.arrobas||'', reg.prevSacas||''
+    reg.arrobas||'', reg.prevSacas||'', reg.origem||''
   ];
   const apiHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
   await new Promise(r=>setTimeout(r,1000));
@@ -1254,7 +1351,7 @@ async function appendExcel(reg, fotoUrl) {
   const nextRow = (usedData.rowCount||1) + 1;
   console.log('Inserindo linha na linha:', nextRow);
   const writeResp = await fetch(
-    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:Y${nextRow}')`,
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:Z${nextRow}')`,
     {method:'PATCH', headers:apiHdrs, body:JSON.stringify({values:[linha]})}
   );
   if(!writeResp.ok) {
@@ -1314,7 +1411,7 @@ async function garantirAba(fileId, mes) {
     }
     await new Promise(r=>setTimeout(r,3000));
   }
-  const cabHdrs = [['Dia','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.']];
+  const cabHdrs = [['Dia','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.','Origem']];
   await new Promise(r=>setTimeout(r,1000));
   const checkHdr = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
@@ -1324,11 +1421,27 @@ async function garantirAba(fileId, mes) {
   if(!hdrData.values?.[0]?.[0]) {
     console.log('Inserindo cabeçalhos na aba:', mes);
     const hdrResp = await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:Y1')`,
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:Z1')`,
       {method:'PATCH', headers:baseHdrs, body:JSON.stringify({values:cabHdrs})}
     );
     if(!hdrResp.ok) console.warn('Cabeçalho falhou:', hdrResp.status);
     await new Promise(r=>setTimeout(r,1500));
+  } else {
+    // Aba já existia (planilha criada antes da coluna Origem existir). Verifica se
+    // a coluna Z já tem o cabeçalho "Origem" e, se não tiver, adiciona agora —
+    // sem isso, abas antigas ficariam sem cabeçalho na nova coluna.
+    const checkZ = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='Z1')`,
+      {headers:baseHdrs}
+    );
+    const zData = await checkZ.json().catch(()=>({values:[['']]}));
+    if(!zData.values?.[0]?.[0]) {
+      await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='Z1')`,
+        {method:'PATCH', headers:baseHdrs, body:JSON.stringify({values:[['Origem']]})}
+      );
+      await new Promise(r=>setTimeout(r,1000));
+    }
   }
 }
 
@@ -1373,7 +1486,7 @@ function buildCard(c) {
 ${fotoHtml}
 <div class="sc-body">
   <div class="sc-produtor">${c.produtor||'—'}</div>
-  <div class="sc-meta">Lote: ${c.lote||'—'} · ${c.kg ? c.kg+' kg · ' : ''}${c.tipo==='coco' ? (c.sacas||'—')+' @' : (c.sacas||'—')+' sc'}</div>
+  <div class="sc-meta">Lote: ${c.lote||'—'} · ${c.kg ? c.kg+' kg · ' : ''}${c.tipo==='coco' ? (c.sacas||'—')+' @' : (c.sacas||'—')+' sc'}${c.origem?' · '+c.origem:''}</div>
   <span class="sc-tipo" style="${tc}">${tl}</span>
   ${bebHtml}
   <div class="sc-grid">${grid}</div>
@@ -1425,6 +1538,7 @@ function textoLaudo(c) {
     `*Data:* ${df}`,
     `*Classificador:* ${c.clf||'—'}`,
     `*Tipo:* ${tl}`,
+    c.origem ? `*Origem:* ${c.origem}` : '',
     c.kg ? `*Quantidade:* ${c.kg} kg` : '',
     c.tipo==='coco'
       ? `*Arrobas:* ${c.sacas||'—'} @${c.prevSacas?' · Prev. sacas benef.: '+c.prevSacas+' sc':''}`
@@ -1596,7 +1710,7 @@ function renderHist(mesSel, anoSel) {
     const df = r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
     return `<div class="hist-item" onclick="verDetalhe(${r.id})">
       <div class="hi-data">${df}</div>
-      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
+      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.origem?r.origem+' · ':''}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
       <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="tag ${tc}">${tl}</span>
@@ -1638,7 +1752,7 @@ function filtrarHist() {
     const df = r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
     return `<div class="hist-item" onclick="verDetalhe(${r.id})">
       <div class="hi-data">${df}</div>
-      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
+      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.origem?r.origem+' · ':''}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
       <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="tag ${tc}">${tl}</span>
@@ -1671,6 +1785,7 @@ function verDetalhe(id) {
     if(c.sacas) rows.push(['Sacas',c.sacas+' sc']);
   }
   rows.push(['Tipo',tl]);
+  if(c.origem) rows.push(['Origem',c.origem]);
   if(c.tipo!=='escolha'){
     if(c.catacao) rows.push(['% Catação',c.catacao+'%']);
     if(c.impureza) rows.push(['% Impureza',c.impureza+'%']);
@@ -1713,7 +1828,13 @@ function closeModal() {
   document.getElementById('modal').classList.remove('open');
   if (itemId !== null) delete fotoCache[itemId];
 }
-function updateBadge() { document.getElementById('badge').textContent = dados.length; }
+function updateBadge() {
+  const badge = document.getElementById('badge');
+  const pendentes = dados.filter(d => !d.sinc).length;
+  badge.textContent = dados.length;
+  badge.style.background = pendentes > 0 ? '#C62828' : '';
+  badge.title = pendentes > 0 ? pendentes + ' pendente(s) de sincronização com o OneDrive' : '';
+}
 function setSinc(t, msg) {
   const w=document.getElementById('sync-wrap'), d=document.getElementById('sync-dot'), tx=document.getElementById('sync-txt');
   w.style.display='flex'; d.className='sync-dot '+t; tx.textContent=msg;
@@ -1735,8 +1856,8 @@ function salvarPath() {
 }
 
 function resetForm() {
-  clf=''; tipo=''; selbBC={}; selbE={}; fotoBC=null; fotoE=null;
-  document.querySelectorAll('.clf-btn,.tipo-card').forEach(el=>el.classList.remove('selected'));
+  clf=''; tipo=''; origem=''; selbBC={}; selbE={}; fotoBC=null; fotoE=null;
+  document.querySelectorAll('.clf-btn,.tipo-card,.origem-btn').forEach(el=>el.classList.remove('selected'));
   const outrosInput = document.getElementById('clf-outros-nome');
   if(outrosInput) { outrosInput.value=''; outrosInput.style.display='none'; }
   document.getElementById('form-bc').style.display='none';
