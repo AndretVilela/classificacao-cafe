@@ -309,6 +309,10 @@ body {
         Conectar Microsoft
       </button>
     </div>
+    <div id="banner-edicao" style="display:none;background:#FFF3CD;border:1.5px solid #E6C568;border-radius:12px;padding:0.85rem 1.1rem;margin-bottom:1rem;font-size:13px;color:#6B4E00;align-items:center;gap:10px">
+      <span style="font-size:18px">✏️</span>
+      <div><strong>Editando classificação</strong><br>Ao salvar, será criada uma <strong>nova entrada</strong> marcada como <strong>EDITADO</strong>. O registro original não será alterado.</div>
+    </div>
     <div class="card">
       <div class="section-title">Classificador</div>
       <div class="classificador-row">
@@ -551,6 +555,7 @@ body {
     <img id="modal-foto" class="modal-foto" style="display:none">
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal()" style="flex:1;padding:11px;font-size:13px">Fechar</button>
+      <button class="btn-secondary" id="btn-editar" onclick="editarRegistro()" style="flex:1;padding:11px;font-size:13px">✏️ Editar</button>
       <button class="btn-primary" id="btn-sinc" onclick="sincItem()" style="flex:1;padding:11px;font-size:13px;display:none">Sincronizar</button>
     </div>
     <div class="share-section" id="share-section" style="display:none">
@@ -582,6 +587,7 @@ const TOKEN_KEY = 'cafe_ms_token';
 const TOKEN_EXP_KEY = 'cafe_ms_token_exp';
 
 let clf = '', tipo = '', origem = '', selbBC = {}, selbE = {}, fotoBC = null, fotoE = null, itemId = null, msToken = null;
+let edicaoOrigemId = null; // != null enquanto o formulário está preenchido a partir de "Editar" no histórico
 let fotoCache = {}; // foto crua (dataURL) pré-carregada por id, pra compartilhar no WhatsApp sem perder a ativacao do usuario
 let tokenRefreshTimer = null;
 let falhasRefresh = 0; // renovações silenciosas seguidas que falharam
@@ -982,6 +988,109 @@ function getDefeitos() {
   return r;
 }
 
+// ===== EDIÇÃO DE REGISTRO HISTÓRICO =====
+// Copia os dados do registro selecionado para o formulário de "Nova" classificação.
+// Ao salvar, isso vira uma NOVA entrada no banco (dados[]), marcada com editado:true
+// e origemEdicaoId apontando pro registro original — o original nunca é alterado
+// nem re-sincronizado, então a planilha do OneDrive não precisa ser tocada.
+function editarRegistro() {
+  const c = buscarRegistro(itemId);
+  if(!c) return;
+  closeModal();
+  const navBtns = document.querySelectorAll('.nav-btn');
+  showScreen('nova', navBtns[0]);
+  resetForm();
+  preencherFormParaEdicao(c);
+  edicaoOrigemId = c.id;
+  const banner = document.getElementById('banner-edicao');
+  if(banner) banner.style.display = 'flex';
+  const btnSalvarTxt = document.querySelector('#btn-salvar-row .btn-primary');
+  if(btnSalvarTxt) btnSalvarTxt.textContent = 'Salvar Edição (nova entrada)';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// Reconstrói o objeto { bebida: xícaras } a partir da string salva (ex: "Mole (3 xíc.) + Dura")
+function parseBebidaStr(str, g) {
+  const s = g==='bc' ? selbBC : selbE;
+  for(const k in s) delete s[k];
+  if(!str) return;
+  str.split(' + ').forEach(parte => {
+    const m = parte.trim().match(/^(.*?)\s*\((\d+)\s*x[íi]c\.?\)$/);
+    if(m) { s[m[1].trim()] = m[2]; }
+    else if(parte.trim()) { s[parte.trim()] = ''; }
+  });
+  document.querySelectorAll('#beb-'+g+' .bebida-toggle').forEach(btn=>{
+    if(s[btn.textContent] !== undefined) btn.classList.add('selected');
+  });
+  renderXic(g);
+}
+
+function preencherFormParaEdicao(c) {
+  document.getElementById('f-data').value = c.data || '';
+  document.getElementById('f-lote').value = c.lote || '';
+  document.getElementById('f-produtor').value = c.produtor || '';
+  document.getElementById('f-kg').value = c.kg || '';
+
+  // classificador
+  if(c.clf === 'João Marcelo') selectClf('João Marcelo','clf-jm2');
+  else {
+    selectClf(c.clf||'', 'clf-outros');
+    const outrosInput = document.getElementById('clf-outros-nome');
+    if(outrosInput) outrosInput.value = c.clf || '';
+    clf = c.clf || ''; // selectClf('clf-outros') zera clf até o usuário digitar; repõe aqui
+  }
+
+  // origem
+  if(c.origem === 'Pé') selectOrigem('pe');
+  else if(c.origem === 'Varreção') selectOrigem('varricao');
+
+  // tipo (isso já exibe form-bc ou form-e e o botão salvar)
+  if(c.tipo) selectTipo(c.tipo);
+
+  if(c.tipo !== 'escolha') {
+    document.getElementById('f-catacao').value = c.catacao || '';
+    document.getElementById('f-impureza').value = c.impureza || '';
+    document.getElementById('f-umidade').value = c.umidade || '';
+    document.getElementById('f-pen17').value = c.pen17 || '';
+    document.getElementById('f-penfundo').value = c.penfundo || '';
+    if(c.tipo === 'coco') document.getElementById('f-renda').value = c.renda || '';
+    parseBebidaStr(c.bebida, 'bc');
+    document.getElementById('f-bobs-bc').value = c.bebidaObs || '';
+    document.getElementById('f-obs-bc').value = c.obs || '';
+    if(c.defeitos) {
+      const lbls = ['Preto','Verde','Ardido','Brocado','Concha','Marinheiro','Palha/Pau','Coco'];
+      document.querySelectorAll('#def-bc .defeito-item input').forEach((inp,idx)=>{
+        inp.value = c.defeitos[lbls[idx]] || '';
+      });
+    }
+    if(c.foto) {
+      fotoBC = c.foto;
+      const prev=document.getElementById('prev-bc'), icon=document.getElementById('icon-bc'), hint=document.getElementById('hint-bc');
+      if(prev){ prev.src=c.foto; prev.style.display='block'; }
+      if(icon) icon.style.display='none';
+      if(hint) hint.style.display='none';
+    }
+  } else {
+    document.getElementById('f-aprov').value = c.aprov || '';
+    document.getElementById('f-penfundo-e').value = c.penfundo || '';
+    document.getElementById('f-imp-pau').value = c.impPau || '';
+    document.getElementById('f-imp-pedra').value = c.impPedra || '';
+    document.getElementById('f-imp-casca').value = c.impCasca || '';
+    parseBebidaStr(c.bebida, 'e');
+    document.getElementById('f-bobs-e').value = c.bebidaObs || '';
+    document.getElementById('f-obs-e').value = c.obs || '';
+    calcImpTotal();
+    if(c.foto) {
+      fotoE = c.foto;
+      const prev=document.getElementById('prev-e'), icon=document.getElementById('icon-e'), hint=document.getElementById('hint-e');
+      if(prev){ prev.src=c.foto; prev.style.display='block'; }
+      if(icon) icon.style.display='none';
+      if(hint) hint.style.display='none';
+    }
+  }
+  calcVolume();
+}
+
 async function salvar() {
   if(!clf) { alert('Selecione o classificador.'); return; }
   if(tipo==='escolha') {
@@ -1020,17 +1129,27 @@ async function salvar() {
   const rendaVal = parseFloat(document.getElementById('f-renda')?.value) || 0;
   const prevSacasCalc = tipo === 'coco' && rendaVal > 0 ? ((kg * rendaVal / 100) / 60) : 0;
 
+  // Se for uma edição, marca o Lote/NF com sufixo "(EDITADO)". Isso deixa a marcação
+  // visível também na planilha do OneDrive e evita que a lógica de reconciliação de
+  // sincronização (que usa lote|produtor|data como chave) confunda esta nova entrada
+  // com o registro original — que tem exatamente os mesmos lote/produtor/data.
+  const loteBase = document.getElementById('f-lote').value;
+  const jaTemMarca = /\(EDITADO\)\s*$/i.test(loteBase);
+  const loteFinal = (edicaoOrigemId && !jaTemMarca) ? (loteBase + (loteBase ? ' ' : '') + '(EDITADO)') : loteBase;
+
   const base = {
     id: Date.now(),
     data: document.getElementById('f-data').value,
-    lote: document.getElementById('f-lote').value,
+    lote: loteFinal,
     produtor: document.getElementById('f-produtor').value,
     kg: kg,
     sacas: tipo !== 'coco' ? sacasCalc.toFixed(2) : arrobasCalc.toFixed(2),
     arrobas: arrobasCalc > 0 ? arrobasCalc.toFixed(2) : '',
     prevSacas: prevSacasCalc > 0 ? prevSacasCalc.toFixed(2) : '',
     origem: origem==='pe' ? 'Pé' : 'Varreção',
-    tipo, clf, sinc: false
+    tipo, clf, sinc: false,
+    editado: !!edicaoOrigemId,
+    origemEdicaoId: edicaoOrigemId || null
   };
 
   const extra = tipo!=='escolha' ? {
@@ -1061,7 +1180,7 @@ async function salvar() {
   dados.unshift(reg);
   salvarLocal();
   updateBadge();
-  toastOk('Classificação salva! Sincronizando...');
+  toastOk(reg.editado ? 'Edição salva como nova entrada!' : 'Classificação salva! Sincronizando...');
   resetForm();
   await sincReg(reg);
 }
@@ -1714,6 +1833,7 @@ function renderHist(mesSel, anoSel) {
       <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="tag ${tc}">${tl}</span>
+        ${r.editado?'<span class="tag" style="background:#FFF3CD;color:#8A6300;font-weight:600">✏️ EDITADO</span>':''}
         <span style="font-size:10px">${r.sinc?'🟢':'🟡'}</span>
       </div>
     </div>`;
@@ -1756,6 +1876,7 @@ function filtrarHist() {
       <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="tag ${tc}">${tl}</span>
+        ${r.editado?'<span class="tag" style="background:#FFF3CD;color:#8A6300;font-weight:600">✏️ EDITADO</span>':''}
         <span style="font-size:10px">${r.sinc?'🟢':'🟡'}</span>
       </div>
     </div>`;
@@ -1775,8 +1896,12 @@ function verDetalhe(id) {
   itemId = id;
   const tl = c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
   const df = c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-  document.getElementById('modal-title').textContent = c.produtor||'Classificação';
+  document.getElementById('modal-title').textContent = (c.produtor||'Classificação') + (c.editado ? ' ✏️ (Editado)' : '');
   let rows=[['Data',df],['Classificador',c.clf||'—'],['Lote/NF',c.lote||'—']];
+  if(c.editado) {
+    const orig = c.origemEdicaoId ? buscarRegistro(c.origemEdicaoId) : null;
+    rows.push(['Edição', orig ? `Baseada no registro original de ${orig.data?new Date(orig.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}` : 'Baseada em registro anterior (não encontrado no cache)']);
+  }
   if(c.kg) rows.push(['Quantidade',c.kg+' kg']);
   if(c.tipo==='coco') {
     if(c.sacas) rows.push(['Arrobas',c.sacas+' @']);
@@ -1857,6 +1982,9 @@ function salvarPath() {
 
 function resetForm() {
   clf=''; tipo=''; origem=''; selbBC={}; selbE={}; fotoBC=null; fotoE=null;
+  edicaoOrigemId = null;
+  const banner = document.getElementById('banner-edicao'); if(banner) banner.style.display='none';
+  const btnSalvarTxt = document.querySelector('#btn-salvar-row .btn-primary'); if(btnSalvarTxt) btnSalvarTxt.textContent='Salvar Classificação';
   document.querySelectorAll('.clf-btn,.tipo-card,.origem-btn').forEach(el=>el.classList.remove('selected'));
   const outrosInput = document.getElementById('clf-outros-nome');
   if(outrosInput) { outrosInput.value=''; outrosInput.style.display='none'; }
