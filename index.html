@@ -358,7 +358,7 @@ body {
           <div class="modalidade-name">Depósito</div>
           <div class="modalidade-desc">Lote já armazenado (GR/GS/GT)</div>
         </div>
-        <div class="modalidade-btn" id="modalidade-oferta" onclick="solicitarPinOferta(()=>selectModalidade('oferta'))">
+        <div class="modalidade-btn" id="modalidade-oferta" onclick="selectModalidade('oferta')">
           <div class="modalidade-icon">🤝</div>
           <div class="modalidade-name">Oferta</div>
           <div class="modalidade-desc">Amostra ainda não depositada</div>
@@ -553,7 +553,7 @@ body {
       </div>
       <div class="hist-toggle">
         <button class="hist-toggle-btn active" id="toggle-hist-deposito" onclick="trocarModalidadeHistorico('deposito')">📦 Depósito</button>
-        <button class="hist-toggle-btn" id="toggle-hist-oferta" onclick="solicitarPinOferta(()=>trocarModalidadeHistorico('oferta'))">🤝 Oferta</button>
+        <button class="hist-toggle-btn" id="toggle-hist-oferta" onclick="trocarModalidadeHistorico('oferta')">🤝 Oferta</button>
       </div>
       <div id="hist-loading" style="display:none;text-align:center;padding:2rem;color:var(--text-light);font-size:14px">
         <div style="font-size:28px;margin-bottom:8px">⏳</div>Carregando classificações...
@@ -582,11 +582,6 @@ body {
         <h3>Pasta no OneDrive</h3>
         <p>Nome da pasta onde a planilha será salva.</p>
         <div class="cfg-input-row"><input type="text" id="cfg-path" placeholder="Ex: Classificação"><button class="cfg-confirm" onclick="salvarPath()">Salvar</button></div>
-      </div>
-      <div class="cfg-box">
-        <h3>PIN de acesso às Ofertas</h3>
-        <p>4 dígitos. Protege contra visualização casual — não é uma senha de segurança real (veja aviso ao tentar acessar Ofertas). Sem essa senha, o usuário só visualiza as classificações de Depósito.</p>
-        <div class="cfg-input-row"><input type="password" id="cfg-pin-oferta" placeholder="0000" maxlength="4" inputmode="numeric" pattern="[0-9]*"><button class="cfg-confirm" onclick="salvarPinOferta()">Salvar</button></div>
       </div>
       <div style="margin-top:1.5rem">
         <div class="section-title">Status</div>
@@ -693,8 +688,6 @@ let modalidade = 'deposito'; // 'deposito' | 'oferta' — modalidade selecionada
 let histModalidade = 'deposito'; // qual modalidade está sendo exibida na tela de Histórico
 let dadosOferta = []; // espelha dados[], mas para classificações de modalidade "oferta" (mês atual)
 let contatos = {}; // { produtorNormalizado: telefone } — cadastro único de contato por produtor
-let pinOferta = localStorage.getItem('cafe_pin_oferta') || null; // PIN de 4 dígitos configurado em Config
-let ofertaDesbloqueada = false; // válido só para esta sessão — recarregar a página tranca de novo
 let codigoOfertaEdicao = null; // preserva o código original ao editar uma oferta existente
 
 try {
@@ -2655,35 +2648,6 @@ function setSinc(t, msg) {
 }
 function toastOk(m) { const t=document.getElementById('toast-ok'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3500); }
 function toastErr(m) { const t=document.getElementById('toast-err'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),5000); }
-
-// IMPORTANTE: isto NÃO é segurança real — é um HTML estático, então qualquer pessoa com
-// DevTools consegue ler o PIN salvo ou pular esta checagem chamando a função direto no
-// console. Serve só para evitar que alguém veja valores de oferta sem querer/por engano
-// (ex: dividindo o mesmo tablet). Para bloqueio de verdade, use permissão de pasta no OneDrive.
-function solicitarPinOferta(callback) {
-  if(ofertaDesbloqueada) { callback(); return; }
-  if(!pinOferta) {
-    toastErr('Configure um PIN de 4 dígitos em Config antes de usar Ofertas.');
-    return;
-  }
-  const digitado = prompt('Digite o PIN de 4 dígitos para acessar Ofertas:');
-  if(digitado === null) return; // usuário cancelou
-  if(digitado.trim() === pinOferta) {
-    ofertaDesbloqueada = true;
-    callback();
-  } else {
-    toastErr('PIN incorreto.');
-  }
-}
-
-function salvarPinOferta() {
-  const v = (document.getElementById('cfg-pin-oferta').value || '').trim();
-  if(!/^\d{4}$/.test(v)) { toastErr('O PIN precisa ter exatamente 4 dígitos numéricos.'); return; }
-  pinOferta = v;
-  localStorage.setItem('cafe_pin_oferta', v);
-  document.getElementById('cfg-pin-oferta').value = '';
-  toastOk('PIN de Ofertas salvo.');
-}
 
 function salvarCfg() {
   clientId = document.getElementById('cfg-client').value.trim();
