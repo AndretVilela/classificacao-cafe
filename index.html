@@ -184,6 +184,43 @@ body {
 }
 .btn-secondary:hover { background: var(--cream); }
 
+/* MODALIDADE (Depósito / Oferta) */
+.modalidade-row { display: flex; gap: 10px; margin-bottom: 0.5rem; }
+.modalidade-btn {
+  flex: 1; border: 1.5px solid var(--border);
+  background: var(--cream); border-radius: 12px;
+  padding: 0.9rem; text-align: center; cursor: pointer; transition: all 0.15s;
+  font-family: 'DM Sans',sans-serif;
+}
+.modalidade-btn:hover { border-color: var(--cafe-light); background: #FDF6EF; }
+.modalidade-btn.selected { border-color: var(--cafe-mid); background: #FDF6EF; box-shadow: 0 0 0 3px rgba(107,66,38,0.1); }
+.modalidade-icon { font-size: 20px; margin-bottom: 3px; }
+.modalidade-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.modalidade-desc { font-size: 11px; color: var(--text-light); margin-top: 1px; }
+.codigo-oferta-box { background: #FDF6EF; border: 1px solid rgba(107,66,38,0.18); border-radius: 10px; padding: 10px 13px; font-size: 13px; color: var(--cafe-mid); margin-top: 5px; }
+
+/* HIST TOGGLE (Depósito / Oferta) */
+.hist-toggle { display: flex; background: var(--cream-dark); border-radius: 10px; padding: 4px; gap: 4px; margin-bottom: 1rem; }
+.hist-toggle-btn { flex: 1; background: transparent; border: none; padding: 8px 10px; border-radius: 7px; font-size: 13px; font-family: 'DM Sans',sans-serif; cursor: pointer; color: var(--text-mid); }
+.hist-toggle-btn.active { background: #fff; color: var(--cafe); font-weight: 500; box-shadow: var(--shadow); }
+
+/* OFERTAS (sub-registro dentro do detalhe do lote) */
+.oferta-section { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
+.oferta-item { background: var(--cream); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; }
+.oferta-item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.oferta-valor { font-weight: 600; color: var(--cafe); font-size: 15px; }
+.oferta-meta { color: var(--text-light); font-size: 12px; }
+.status-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.status-aguardando { background: #FFF3CD; color: #8A6300; }
+.status-recusada { background: #FBE1E1; color: #A32626; }
+.status-fechada { background: #DFF3DF; color: #276B27; }
+.status-perdida { background: #E6E6E6; color: #5C5C5C; }
+.agendar-frete-banner { background: #DFF3DF; border: 1.5px solid #A8D9A8; border-radius: 10px; padding: 10px 13px; margin-top: 10px; font-size: 13px; color: #276B27; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.nova-oferta-form { background: #fff; border: 1.5px solid var(--border-mid); border-radius: 10px; padding: 12px; margin-top: 10px; display: none; }
+.nova-oferta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.nova-oferta-grid label { font-size: 11px; color: var(--text-mid); font-weight: 500; display: block; margin-bottom: 3px; }
+.nova-oferta-grid input, .nova-oferta-grid select { width: 100%; border: 0.5px solid var(--border-mid); border-radius: 8px; padding: 8px 10px; font-size: 13px; background: var(--cream); color: var(--text); font-family: 'DM Sans',sans-serif; }
+
 /* HISTÓRICO */
 .hist-list { display: flex; flex-direction: column; gap: 8px; }
 .hist-item {
@@ -313,6 +350,21 @@ body {
       <span style="font-size:18px">✏️</span>
       <div><strong>Editando classificação</strong><br>Ao salvar, será criada uma <strong>nova entrada</strong> marcada como <strong>EDITADO</strong>. O registro original não será alterado.</div>
     </div>
+    <div class="card" id="card-modalidade">
+      <div class="section-title">Modalidade</div>
+      <div class="modalidade-row">
+        <div class="modalidade-btn selected" id="modalidade-deposito" onclick="selectModalidade('deposito')">
+          <div class="modalidade-icon">📦</div>
+          <div class="modalidade-name">Depósito</div>
+          <div class="modalidade-desc">Lote já armazenado (GR/GS/GT)</div>
+        </div>
+        <div class="modalidade-btn" id="modalidade-oferta" onclick="solicitarPinOferta(()=>selectModalidade('oferta'))">
+          <div class="modalidade-icon">🤝</div>
+          <div class="modalidade-name">Oferta</div>
+          <div class="modalidade-desc">Amostra ainda não depositada</div>
+        </div>
+      </div>
+    </div>
     <div class="card">
       <div class="section-title">Classificador</div>
       <div class="classificador-row">
@@ -327,8 +379,13 @@ body {
       <div class="section-title">Dados gerais</div>
       <div class="form-grid">
         <div class="form-group"><label>Data</label><input type="date" id="f-data"></div>
-        <div class="form-group"><label>Nº Lote / NF</label><input type="text" id="f-lote" placeholder="Ex: NF-2026-001"></div>
-        <div class="form-group"><label>Produtor / Fazenda</label><input type="text" id="f-produtor" placeholder="Nome do produtor"></div>
+        <div class="form-group" id="grupo-lote"><label>Nº Lote / NF</label><input type="text" id="f-lote" placeholder="Ex: NF-2026-001"></div>
+        <div class="form-group" id="grupo-codigo-oferta" style="display:none">
+          <label>Código da oferta</label>
+          <div class="codigo-oferta-box">Gerado automaticamente ao salvar</div>
+        </div>
+        <div class="form-group"><label>Produtor / Fazenda</label><input type="text" id="f-produtor" placeholder="Nome do produtor" oninput="autofillContato()"></div>
+        <div class="form-group"><label>Telefone de contato</label><input type="tel" id="f-contato" placeholder="(35) 99999-9999"></div>
         <div class="form-group"><label>Quantidade (kg)</label><input type="number" id="f-kg" placeholder="0" min="0" step="0.01" oninput="calcVolume()"></div>
       </div>
       <div class="form-group" style="margin-top:0.85rem">
@@ -494,6 +551,10 @@ body {
           </select>
         </div>
       </div>
+      <div class="hist-toggle">
+        <button class="hist-toggle-btn active" id="toggle-hist-deposito" onclick="trocarModalidadeHistorico('deposito')">📦 Depósito</button>
+        <button class="hist-toggle-btn" id="toggle-hist-oferta" onclick="solicitarPinOferta(()=>trocarModalidadeHistorico('oferta'))">🤝 Oferta</button>
+      </div>
       <div id="hist-loading" style="display:none;text-align:center;padding:2rem;color:var(--text-light);font-size:14px">
         <div style="font-size:28px;margin-bottom:8px">⏳</div>Carregando classificações...
       </div>
@@ -521,6 +582,11 @@ body {
         <h3>Pasta no OneDrive</h3>
         <p>Nome da pasta onde a planilha será salva.</p>
         <div class="cfg-input-row"><input type="text" id="cfg-path" placeholder="Ex: Classificação"><button class="cfg-confirm" onclick="salvarPath()">Salvar</button></div>
+      </div>
+      <div class="cfg-box">
+        <h3>PIN de acesso às Ofertas</h3>
+        <p>4 dígitos. Protege contra visualização casual — não é uma senha de segurança real (veja aviso ao tentar acessar Ofertas). Sem essa senha, o usuário só visualiza as classificações de Depósito.</p>
+        <div class="cfg-input-row"><input type="password" id="cfg-pin-oferta" placeholder="0000" maxlength="4" inputmode="numeric" pattern="[0-9]*"><button class="cfg-confirm" onclick="salvarPinOferta()">Salvar</button></div>
       </div>
       <div style="margin-top:1.5rem">
         <div class="section-title">Status</div>
@@ -553,6 +619,30 @@ body {
     </div>
     <div id="modal-body"></div>
     <img id="modal-foto" class="modal-foto" style="display:none">
+    <div id="oferta-section" class="oferta-section" style="display:none">
+      <div class="section-title" style="margin-bottom:8px">Ofertas registradas</div>
+      <div id="oferta-lista"></div>
+      <div id="agendar-frete-banner" class="agendar-frete-banner" style="display:none">🚚 Oferta fechada — agendar frete</div>
+      <button class="btn-secondary" style="width:100%;margin-top:10px" onclick="toggleNovaOfertaForm()">+ Adicionar oferta</button>
+      <div class="nova-oferta-form" id="nova-oferta-form">
+        <div class="nova-oferta-grid">
+          <div><label>Data da oferta</label><input type="date" id="nof-data"></div>
+          <div><label>Valor ofertado (R$/saca)</label><input type="number" id="nof-valor" placeholder="0,00" step="0.01"></div>
+          <div><label>Data de pagamento</label><input type="date" id="nof-pagamento"></div>
+          <div><label>Posição na bolsa (¢/lb)</label><input type="number" id="nof-bolsa" placeholder="0,00" step="0.01"></div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:11px;color:var(--text-mid);font-weight:500;display:block;margin-bottom:3px">Status</label>
+          <select id="nof-status" style="width:100%;border:0.5px solid var(--border-mid);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--cream);color:var(--text);font-family:'DM Sans',sans-serif">
+            <option value="Aguardando retorno cliente">Aguardando retorno cliente</option>
+            <option value="Recusada">Recusada</option>
+            <option value="Fechada">Fechada</option>
+            <option value="Perdida">Perdida</option>
+          </select>
+        </div>
+        <button class="btn-primary" style="padding:10px" onclick="salvarNovaOferta()">Salvar oferta</button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal()" style="flex:1;padding:11px;font-size:13px">Fechar</button>
       <button class="btn-secondary" id="btn-editar" onclick="editarRegistro()" style="flex:1;padding:11px;font-size:13px">✏️ Editar</button>
@@ -581,6 +671,10 @@ const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Ag
 
 const CLIENT_ID = 'ff4e57e2-4fc1-4b2e-8e4a-28a2df5a20c9';
 const TENANT_ID = '9a66e204-c69d-486c-97ff-40f69be9595f';
+// ATENÇÃO: ao publicar esta versão de teste em uma URL diferente, troque o valor abaixo
+// para a URL exata onde ela será hospedada E cadastre essa mesma URL como Redirect URI
+// no registro do aplicativo no Azure AD (portal.azure.com > App registrations > Authentication).
+// Sem isso, o login Microsoft falha com erro "redirect_uri_mismatch".
 const REDIRECT_URI = 'https://andretvilela.github.io/classificacao-cafe/';
 const MS_SCOPES = 'Files.ReadWrite User.Read offline_access';
 const TOKEN_KEY = 'cafe_ms_token';
@@ -595,11 +689,59 @@ let clientId = localStorage.getItem('cafe_client_id') || CLIENT_ID;
 let tenantId = localStorage.getItem('cafe_tenant_id') || TENANT_ID;
 let odPath = localStorage.getItem('cafe_od_path') || 'Classificação';
 let dados = [];
+let modalidade = 'deposito'; // 'deposito' | 'oferta' — modalidade selecionada no formulário "Nova"
+let histModalidade = 'deposito'; // qual modalidade está sendo exibida na tela de Histórico
+let dadosOferta = []; // espelha dados[], mas para classificações de modalidade "oferta" (mês atual)
+let contatos = {}; // { produtorNormalizado: telefone } — cadastro único de contato por produtor
+let pinOferta = localStorage.getItem('cafe_pin_oferta') || null; // PIN de 4 dígitos configurado em Config
+let ofertaDesbloqueada = false; // válido só para esta sessão — recarregar a página tranca de novo
+let codigoOfertaEdicao = null; // preserva o código original ao editar uma oferta existente
 
 try {
   const h = new Date(), k = `cafe_${h.getFullYear()}_${h.getMonth()}`;
   dados = JSON.parse(localStorage.getItem(k) || '[]');
 } catch(e) { dados = []; }
+
+try {
+  const h = new Date(), k = `cafe_oferta_${h.getFullYear()}_${h.getMonth()}`;
+  dadosOferta = JSON.parse(localStorage.getItem(k) || '[]');
+} catch(e) { dadosOferta = []; }
+
+try {
+  contatos = JSON.parse(localStorage.getItem('cafe_contatos') || '{}');
+} catch(e) { contatos = {}; }
+
+function normalizarProdutor(nome) {
+  return (nome||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+function autofillContato() {
+  const nome = document.getElementById('f-produtor')?.value || '';
+  const contatoInput = document.getElementById('f-contato');
+  if(!contatoInput || contatoInput.value) return; // não sobrescreve o que o usuário já digitou
+  const tel = contatos[normalizarProdutor(nome)];
+  if(tel) contatoInput.value = tel;
+}
+
+// Converte um índice de coluna (1-based) para a letra correspondente do Excel (1->A, 27->AA...).
+// Usado nas planilhas de Oferta para não repetir o problema da planilha de Depósito,
+// que ficou com os limites de coluna (A:Z) fixos no código.
+function colLetra(n) {
+  let s = '';
+  while(n > 0) {
+    const rem = (n - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+function gerarCodigoOferta() {
+  const rand = (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID().replace(/-/g,'').slice(0,6).toUpperCase()
+    : Math.random().toString(36).slice(2,8).toUpperCase();
+  return 'OF-' + rand;
+}
 
 function salvarToken(token, expiresIn) {
   const expAt = Date.now() + ((parseInt(expiresIn)||3600) - 120) * 1000; // 2min antes de expirar
@@ -672,7 +814,13 @@ function salvarLocal() {
   try { localStorage.setItem(k, JSON.stringify(dados)); } catch(e) {}
 }
 
+function salvarLocalOferta() {
+  const h = new Date(), k = `cafe_oferta_${h.getFullYear()}_${h.getMonth()}`;
+  try { localStorage.setItem(k, JSON.stringify(dadosOferta)); } catch(e) {}
+}
+
 const cacheHistorico = {}; // { 'Janeiro_2026': [...] }
+const cacheHistoricoOferta = {}; // idem, mas para o workbook Ofertas_AAAA.xlsx
 
 async function carregarDoOneDrive(mesSel, anoSel) {
   if(!msToken) return;
@@ -803,6 +951,124 @@ async function carregarDoOneDrive(mesSel, anoSel) {
   }
 }
 
+// Espelha carregarDoOneDrive(), mas lê do workbook Ofertas_AAAA.xlsx e usa o mapeamento
+// de colunas novo (Código no lugar de Lote/NF, mais Contato e UltimoStatusOferta).
+// Não precisa de fallback para "formato antigo" — é planilha nova.
+async function carregarOfertasDoOneDrive(mesSel, anoSel) {
+  if(!msToken) return;
+  const h = new Date();
+  const mes = mesSel || MESES[h.getMonth()];
+  const ano = anoSel || h.getFullYear();
+  setSinc('pending','Carregando...');
+  const loading = document.getElementById('hist-loading');
+  const container = document.getElementById('hist-container');
+  if(loading) { loading.style.display='block'; if(container) container.style.display='none'; }
+  try {
+    const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const nomeArq = `Ofertas_${ano}.xlsx`;
+    const pathArq = `${pastaRaiz}/${nomeArq}`;
+    const pathArqEnc2 = pathArq.split('/').map(p => encodeURIComponent(p)).join('/');
+    const checkR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathArqEnc2}`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!checkR.ok) {
+      cacheHistoricoOferta[`${mes}_${ano}`] = [];
+      setSinc('ok','Conectado');
+      return;
+    }
+    const fileData = await checkR.json();
+    const fileId = fileData.id;
+    const metaR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}?select=name,size,file`,{headers:{Authorization:'Bearer '+msToken}});
+    const meta = await metaR.json();
+    if(!meta.file || meta.size < 1000) { cacheHistoricoOferta[`${mes}_${ano}`] = []; setSinc('ok','Conectado'); return; }
+    const abasR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!abasR.ok) { setSinc('ok','Conectado'); return; }
+    const abasData = await abasR.json();
+    const abas = (abasData.value||[]).map(s=>s.name);
+    if(!abas.includes(mes)) {
+      cacheHistoricoOferta[`${mes}_${ano}`] = [];
+      setSinc('ok','Conectado');
+      toastOk('Sem ofertas em ' + mes + ' ' + ano + '.');
+      return;
+    }
+    const rangeR = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,
+      {headers:{Authorization:'Bearer '+msToken}}
+    );
+    if(!rangeR.ok) { setSinc('ok','Conectado'); return; }
+    const rangeData = await rangeR.json();
+    const rows = rangeData.values || [];
+    if(rows.length <= 1) { cacheHistoricoOferta[`${mes}_${ano}`] = []; setSinc('ok','Conectado'); return; }
+    const dadosCloud = [];
+    for(let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if(!r[3]) continue; // sem produtor, ignora
+      let dataISO = '';
+      const celula = String(r[0] || '').trim();
+      if(/^\d{1,2}$/.test(celula)) {
+        const mesIdx = MESES.indexOf(mes);
+        const diaStr = parseInt(celula).toString().padStart(2,'0');
+        const mesStr = String(mesIdx + 1).padStart(2,'0');
+        dataISO = `${ano}-${mesStr}-${diaStr}`;
+      }
+      const defeitosObj = {};
+      if(r[16]) { String(r[16]).split('|').forEach(p => { const [k,v]=p.trim().split(':'); if(k&&v) defeitosObj[k.trim()]=parseInt(v)||0; }); }
+      const tipoNorm = r[7]==='Beneficiado'?'beneficiado':r[7]==='Em Coco'?'coco':'escolha';
+      dadosCloud.push({
+        id: Date.now() + i * 7 + 3,
+        data: dataISO,
+        clf:       r[1]  || '',
+        lote:      r[2]  || '', // Código da oferta
+        produtor:  r[3]  || '',
+        contato:   r[4]  || '',
+        kg:        r[5]  || '',
+        sacas:     r[6]  || '',
+        tipo:      tipoNorm,
+        catacao:   r[8]  || '',
+        impureza:  r[9]  || '',
+        umidade:   r[10] || '',
+        pen17:     r[11] || '',
+        penfundo:  r[12] || '',
+        renda:     r[13] || '',
+        bebida:    r[14] || '',
+        bebidaObs: r[15] || '',
+        defeitos:  defeitosObj,
+        aprov:     r[17] || '',
+        impPau:    r[19] || '',
+        impPedra:  r[20] || '',
+        impCasca:  r[21] || '',
+        obs:       r[22] || '',
+        fotoUrl:   r[23] || '',
+        fotoPath:  r[23] || '',
+        arrobas:   r[24] || '',
+        prevSacas: r[25] || '',
+        origem:    r[26] || '',
+        ultimoStatusOferta: r[27] || '',
+        modalidade: 'oferta',
+        sinc: true,
+        fromCloud: true
+      });
+    }
+    cacheHistoricoOferta[`${mes}_${ano}`] = dadosCloud;
+    const hAgora = new Date();
+    if(mes === MESES[hAgora.getMonth()] && ano === hAgora.getFullYear()) {
+      const chave = d => `${d.lote}|${d.produtor}|${d.data}`;
+      const chavesCloud = new Set(dadosCloud.map(chave));
+      const locaisNaoSinc = dadosOferta.filter(d => !d.sinc && !chavesCloud.has(chave(d)));
+      dadosOferta = [...locaisNaoSinc, ...dadosCloud];
+      salvarLocalOferta();
+      updateBadge();
+    }
+    setSinc('ok','Sincronizado');
+  } catch(e) {
+    console.error('[Histórico Ofertas] Erro:', e);
+    setSinc('ok','Conectado');
+    toastErr('Erro ao carregar ofertas: ' + (e.message||''));
+  } finally {
+    if(loading) loading.style.display = 'none';
+    if(container) container.style.display = 'block';
+    if(histModalidade === 'oferta') renderHist(mes, ano);
+  }
+}
+
 function calcImpTotal() {
   const pau = parseFloat(document.getElementById('f-imp-pau')?.value)||0;
   const pedra = parseFloat(document.getElementById('f-imp-pedra')?.value)||0;
@@ -891,7 +1157,30 @@ function showScreen(n, btn) {
     const mes = document.getElementById('hist-sel-mes')?.value;
     const ano = parseInt(document.getElementById('hist-sel-ano')?.value);
     renderHist(mes, ano);
-    if(msToken) carregarDoOneDrive(mes, ano).catch(()=>{});
+    if(msToken) {
+      if(histModalidade === 'oferta') carregarOfertasDoOneDrive(mes, ano).catch(()=>{});
+      else carregarDoOneDrive(mes, ano).catch(()=>{});
+    }
+  }
+}
+
+function trocarModalidadeHistorico(m) {
+  histModalidade = m;
+  document.getElementById('toggle-hist-deposito').classList.toggle('active', m==='deposito');
+  document.getElementById('toggle-hist-oferta').classList.toggle('active', m==='oferta');
+  const mes = document.getElementById('hist-sel-mes')?.value;
+  const ano = parseInt(document.getElementById('hist-sel-ano')?.value);
+  const chaveCache = `${mes}_${ano}`;
+  const cache = m==='oferta' ? cacheHistoricoOferta : cacheHistorico;
+  const hAgora = new Date();
+  const ehMesAtual = mes === MESES[hAgora.getMonth()] && ano === hAgora.getFullYear();
+  if(ehMesAtual || cache[chaveCache] !== undefined) {
+    renderHist(mes, ano);
+  } else if(msToken) {
+    if(m==='oferta') carregarOfertasDoOneDrive(mes, ano).catch(()=>{});
+    else carregarDoOneDrive(mes, ano).catch(()=>{});
+  } else {
+    renderHist(mes, ano);
   }
 }
 
@@ -908,6 +1197,16 @@ function selectClf(nome, id) {
     outrosInput.style.display = 'none';
     outrosInput.value = '';
   }
+}
+
+function selectModalidade(m) {
+  modalidade = m;
+  document.getElementById('modalidade-deposito').classList.toggle('selected', m==='deposito');
+  document.getElementById('modalidade-oferta').classList.toggle('selected', m==='oferta');
+  const grupoLote = document.getElementById('grupo-lote');
+  const grupoCodigo = document.getElementById('grupo-codigo-oferta');
+  if(grupoLote) grupoLote.style.display = m==='oferta' ? 'none' : '';
+  if(grupoCodigo) grupoCodigo.style.display = m==='oferta' ? '' : 'none';
 }
 
 function selectOrigem(o) {
@@ -1027,9 +1326,17 @@ function parseBebidaStr(str, g) {
 
 function preencherFormParaEdicao(c) {
   document.getElementById('f-data').value = c.data || '';
-  document.getElementById('f-lote').value = c.lote || '';
   document.getElementById('f-produtor').value = c.produtor || '';
   document.getElementById('f-kg').value = c.kg || '';
+  const fContato = document.getElementById('f-contato'); if(fContato) fContato.value = c.contato || '';
+
+  if(c.modalidade === 'oferta') {
+    selectModalidade('oferta');
+    codigoOfertaEdicao = c.lote || null; // preserva o código pra não desconectar as ofertas já registradas
+  } else {
+    selectModalidade('deposito');
+    document.getElementById('f-lote').value = c.lote || '';
+  }
 
   // classificador
   if(c.clf === 'João Marcelo') selectClf('João Marcelo','clf-jm2');
@@ -1133,15 +1440,20 @@ async function salvar() {
   // visível também na planilha do OneDrive e evita que a lógica de reconciliação de
   // sincronização (que usa lote|produtor|data como chave) confunda esta nova entrada
   // com o registro original — que tem exatamente os mesmos lote/produtor/data.
-  const loteBase = document.getElementById('f-lote').value;
+  // Para modalidade "oferta" não existe Nº Lote manual — um código único é gerado agora,
+  // A MENOS que esta seja uma edição de uma oferta existente: nesse caso o código original
+  // é preservado (codigoOfertaEdicao), senão as ofertas já registradas para o lote antigo
+  // ficariam órfãs, desconectadas do novo código.
+  const loteBase = modalidade === 'oferta' ? (codigoOfertaEdicao || gerarCodigoOferta()) : document.getElementById('f-lote').value;
   const jaTemMarca = /\(EDITADO\)\s*$/i.test(loteBase);
-  const loteFinal = (edicaoOrigemId && !jaTemMarca) ? (loteBase + (loteBase ? ' ' : '') + '(EDITADO)') : loteBase;
+  const loteFinal = (edicaoOrigemId && !jaTemMarca && modalidade !== 'oferta') ? (loteBase + (loteBase ? ' ' : '') + '(EDITADO)') : loteBase;
 
   const base = {
     id: Date.now(),
     data: document.getElementById('f-data').value,
     lote: loteFinal,
     produtor: document.getElementById('f-produtor').value,
+    contato: document.getElementById('f-contato')?.value || '',
     kg: kg,
     sacas: tipo !== 'coco' ? sacasCalc.toFixed(2) : arrobasCalc.toFixed(2),
     arrobas: arrobasCalc > 0 ? arrobasCalc.toFixed(2) : '',
@@ -1149,7 +1461,8 @@ async function salvar() {
     origem: origem==='pe' ? 'Pé' : 'Varreção',
     tipo, clf, sinc: false,
     editado: !!edicaoOrigemId,
-    origemEdicaoId: edicaoOrigemId || null
+    origemEdicaoId: edicaoOrigemId || null,
+    modalidade: modalidade
   };
 
   const extra = tipo!=='escolha' ? {
@@ -1177,12 +1490,23 @@ async function salvar() {
   };
 
   const reg = {...base, ...extra};
-  dados.unshift(reg);
-  salvarLocal();
+  if(reg.modalidade === 'oferta') {
+    dadosOferta.unshift(reg);
+    salvarLocalOferta();
+  } else {
+    dados.unshift(reg);
+    salvarLocal();
+  }
   updateBadge();
-  toastOk(reg.editado ? 'Edição salva como nova entrada!' : 'Classificação salva! Sincronizando...');
+  if(reg.modalidade === 'oferta') {
+    toastOk('Oferta salva! Código: ' + reg.lote + ' — Sincronizando...');
+  } else {
+    toastOk(reg.editado ? 'Edição salva como nova entrada!' : 'Classificação salva! Sincronizando...');
+  }
   resetForm();
   await sincReg(reg);
+  // Atualiza o cadastro de contato do produtor (não bloqueia o fluxo se falhar).
+  if(reg.contato && reg.produtor) salvarContatoOneDrive(reg.produtor, reg.contato).catch(()=>{});
 }
 
 // ===== MICROSOFT GRAPH =====
@@ -1226,7 +1550,7 @@ async function verificarConexaoViva(jaTentouRefresh) {
 let sincronizandoPendentes = false;
 async function sincronizarPendentes() {
   if(!msToken || sincronizandoPendentes) return;
-  const pendentes = dados.filter(d => !d.sinc);
+  const pendentes = [...dados.filter(d => !d.sinc), ...dadosOferta.filter(d => !d.sinc)];
   if(!pendentes.length) return;
   sincronizandoPendentes = true;
   toastOk(pendentes.length + ' classificação(ões) pendente(s) — sincronizando...');
@@ -1285,6 +1609,7 @@ function onConnected() {
   setSinc('ok','Conectado');
   setFormularioBloqueado(false);
   carregarDoOneDrive().catch(()=>{});
+  carregarContatosOneDrive().catch(()=>{});
   sincronizarPendentes();
 }
 
@@ -1350,9 +1675,15 @@ async function sincReg(reg) {
       catch(e) { console.warn('Foto falhou:', e.message); fotoUrl = ''; }
     }
 
-    await appendExcel(reg, fotoUrl);
-    reg.sinc = true; reg.fotoUrl = fotoUrl;
-    salvarLocal();
+    if(reg.modalidade === 'oferta') {
+      await appendExcelOferta(reg, fotoUrl);
+      reg.sinc = true; reg.fotoUrl = fotoUrl;
+      salvarLocalOferta();
+    } else {
+      await appendExcel(reg, fotoUrl);
+      reg.sinc = true; reg.fotoUrl = fotoUrl;
+      salvarLocal();
+    }
     setSinc('ok','Sincronizado');
     toastOk('Sincronizado com OneDrive!');
   } catch(e) {
@@ -1478,6 +1809,224 @@ async function appendExcel(reg, fotoUrl) {
     throw new Error('Erro ao escrever linha: '+writeResp.status+' — '+(e.error?.message||''));
   }
   console.log('Linha salva com sucesso!');
+}
+
+// ===== WORKBOOK DE OFERTAS (separado do workbook de Depósito) =====
+// Ofertas_AAAA.xlsx: uma aba por mês, mesma lógica de Classificacoes_AAAA.xlsx, mas com
+// colunas Código (em vez de Lote/NF) e Contato adicionadas. Como é um arquivo novo, as
+// colunas NÃO são fixas em "Z" — usamos colLetra() pra não repetir a fragilidade da
+// planilha de Depósito, que ficou lotada em A:Z.
+async function appendExcelOferta(reg, fotoUrl) {
+  const d = new Date(reg.data+'T12:00:00');
+  const ano = d.getFullYear(), mes = MESES[d.getMonth()];
+  const nomeArq = `Ofertas_${ano}.xlsx`;
+  const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const pathArq = `${pastaRaiz}/${nomeArq}`;
+  let fileId = await getOrCreateExcel(pathArq, mes);
+  await garantirAbaOferta(fileId, mes);
+  const tl = reg.tipo==='beneficiado'?'Beneficiado':reg.tipo==='coco'?'Em Coco':'Escolha';
+  const dia = d.getDate();
+  const def = reg.defeitos ? Object.entries(reg.defeitos).map(([k,v])=>k+':'+v).join(' | ') : '';
+  const impTotal = reg.tipo==='escolha' ? (
+    (parseFloat(reg.impPau)||0) + (parseFloat(reg.impPedra)||0) + (parseFloat(reg.impCasca)||0)
+  ).toFixed(2) : '';
+  const linha = [
+    dia, reg.clf||'', reg.lote||'', reg.produtor||'', reg.contato||'', reg.kg||'', reg.sacas||'', tl,
+    reg.catacao||'', reg.impureza||'', reg.umidade||'', reg.pen17||'', reg.penfundo||'',
+    reg.renda||'', reg.bebida||'', reg.bebidaObs||'', def,
+    reg.aprov||'', impTotal||'', reg.impPau||'', reg.impPedra||'', reg.impCasca||'',
+    reg.obs||'', fotoUrl,
+    reg.arrobas||'', reg.prevSacas||'', reg.origem||'', reg.ultimoStatusOferta||''
+  ];
+  const apiHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+  await new Promise(r=>setTimeout(r,1000));
+  const fimCol = colLetra(linha.length);
+  const usedResp = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,
+    {headers:apiHdrs}
+  );
+  if(!usedResp.ok) {
+    const e = await usedResp.json().catch(()=>({}));
+    throw new Error('Erro ao ler usedRange (ofertas): '+usedResp.status+' — '+(e.error?.message||''));
+  }
+  const usedData = await usedResp.json();
+  const nextRow = (usedData.rowCount||1) + 1;
+  const writeResp = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:${fimCol}${nextRow}')`,
+    {method:'PATCH', headers:apiHdrs, body:JSON.stringify({values:[linha]})}
+  );
+  if(!writeResp.ok) {
+    const e = await writeResp.json().catch(()=>({}));
+    throw new Error('Erro ao escrever linha (ofertas): '+writeResp.status+' — '+(e.error?.message||''));
+  }
+}
+
+async function garantirAbaOferta(fileId, mes) {
+  await new Promise(r=>setTimeout(r,2000));
+  const baseHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:baseHdrs});
+  if(!r.ok) {
+    const errBody = await r.json().catch(()=>({}));
+    throw new Error('Erro ao listar abas (ofertas): '+r.status+' — '+(errBody.error?.message||''));
+  }
+  const d = await r.json();
+  const abas = (d.value||[]).map(s=>s.name);
+  if(!abas.includes(mes)) {
+    const crAba = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{
+      method:'POST', headers:baseHdrs, body:JSON.stringify({name:mes})
+    });
+    if(!crAba.ok) {
+      const e = await crAba.json().catch(()=>({}));
+      throw new Error('Erro ao criar aba (ofertas): '+crAba.status+' — '+(e.error?.message||''));
+    }
+    await new Promise(r=>setTimeout(r,3000));
+  }
+  const cabHdrs = [['Dia','Classificador','Código','Produtor','Contato','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.','Origem','UltimoStatusOferta']];
+  const fimCol = colLetra(cabHdrs[0].length);
+  await new Promise(r=>setTimeout(r,1000));
+  const checkHdr = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
+    {headers:baseHdrs}
+  );
+  const hdrData = await checkHdr.json().catch(()=>({values:[['']]}));
+  if(!hdrData.values?.[0]?.[0]) {
+    const hdrResp = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:${fimCol}1')`,
+      {method:'PATCH', headers:baseHdrs, body:JSON.stringify({values:cabHdrs})}
+    );
+    if(!hdrResp.ok) console.warn('Cabeçalho (ofertas) falhou:', hdrResp.status);
+    await new Promise(r=>setTimeout(r,1500));
+  }
+}
+
+// ===== REGISTRO DE OFERTAS (valor, status etc.) E CONTATOS =====
+// Ambos vivem num workbook único e permanente (não é por ano, porque um produtor e seu
+// telefone — e o histórico de ofertas de um lote — não deveriam ficar fragmentados
+// entre arquivos de anos diferentes).
+async function getOrCreateOfertasRegistrosWorkbook() {
+  const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const path = `${pastaRaiz}/Ofertas_Registros.xlsx`;
+  return await getOrCreateExcel(path, null);
+}
+
+async function garantirAbaRegistrosOferta(fileId) {
+  const baseHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:baseHdrs});
+  if(!r.ok) throw new Error('Erro ao listar abas (registros): '+r.status);
+  const d = await r.json();
+  const abas = (d.value||[]).map(s=>s.name);
+  if(!abas.includes('Registros')) {
+    const cr = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{method:'POST',headers:baseHdrs,body:JSON.stringify({name:'Registros'})});
+    if(!cr.ok) throw new Error('Erro ao criar aba Registros: '+cr.status);
+    await new Promise(res=>setTimeout(res,2000));
+    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='A1:H1')`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({values:[['Codigo','Produtor','DataOferta','ValorOfertado','DataPagamento','PosicaoBolsa','Status','DataRegistro']]})});
+    await new Promise(res=>setTimeout(res,1000));
+  }
+}
+
+async function appendRegistroOfertaOneDrive(reg) {
+  const fileId = await getOrCreateOfertasRegistrosWorkbook();
+  await garantirAbaRegistrosOferta(fileId);
+  const apiHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+  const usedResp = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/usedRange`,{headers:apiHdrs});
+  if(!usedResp.ok) throw new Error('Erro ao ler usedRange (registro oferta): '+usedResp.status);
+  const usedData = await usedResp.json();
+  const nextRow = (usedData.rowCount||1) + 1;
+  const agora = new Date().toLocaleDateString('pt-BR');
+  const linha = [reg.codigo, reg.produtor||'', reg.dataOferta||'', reg.valor||'', reg.dataPagamento||'', reg.posicaoBolsa||'', reg.status||'', agora];
+  const writeResp = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='A${nextRow}:H${nextRow}')`,{method:'PATCH',headers:apiHdrs,body:JSON.stringify({values:[linha]})});
+  if(!writeResp.ok) {
+    const e = await writeResp.json().catch(()=>({}));
+    throw new Error('Erro ao gravar oferta: '+writeResp.status+' — '+(e.error?.message||''));
+  }
+}
+
+async function carregarRegistrosOfertaOneDrive(codigo) {
+  if(!msToken || !codigo) return [];
+  try {
+    const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const path = `${pastaRaiz}/Ofertas_Registros.xlsx`;
+    const pathEnc = path.split('/').map(p=>encodeURIComponent(p)).join('/');
+    const checkR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!checkR.ok) return [];
+    const fileData = await checkR.json();
+    const fileId = fileData.id;
+    const abasR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!abasR.ok) return [];
+    const abasData = await abasR.json();
+    if(!(abasData.value||[]).some(s=>s.name==='Registros')) return [];
+    const rangeR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/usedRange`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!rangeR.ok) return [];
+    const rangeData = await rangeR.json();
+    const rows = rangeData.values || [];
+    const resultado = [];
+    for(let i=1;i<rows.length;i++) {
+      const r = rows[i];
+      if(r[0] === codigo) resultado.push({ codigo:r[0], produtor:r[1], dataOferta:r[2], valor:r[3], dataPagamento:r[4], posicaoBolsa:r[5], status:r[6], dataRegistro:r[7] });
+    }
+    return resultado;
+  } catch(e) { console.warn('[carregarRegistrosOferta] falhou:', e); return []; }
+}
+
+async function garantirAbaContatos(fileId) {
+  const baseHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+  const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:baseHdrs});
+  if(!r.ok) throw new Error('Erro ao listar abas (contatos): '+r.status);
+  const d = await r.json();
+  const abas = (d.value||[]).map(s=>s.name);
+  if(!abas.includes('Contatos')) {
+    const cr = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{method:'POST',headers:baseHdrs,body:JSON.stringify({name:'Contatos'})});
+    if(!cr.ok) throw new Error('Erro ao criar aba Contatos: '+cr.status);
+    await new Promise(res=>setTimeout(res,2000));
+    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Contatos/range(address='A1:C1')`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({values:[['Produtor','Telefone','DataRegistro']]})});
+    await new Promise(res=>setTimeout(res,1000));
+  }
+}
+
+// Registro append-only (nunca sobrescreve uma linha existente): ao ler, o último
+// registro de cada produtor "vence". Isso evita ter que localizar e atualizar uma
+// linha específica via API — mais simples e mais robusto contra falhas parciais.
+async function salvarContatoOneDrive(produtor, telefone) {
+  if(!msToken || !produtor || !telefone) return;
+  try {
+    const fileId = await getOrCreateOfertasRegistrosWorkbook();
+    await garantirAbaContatos(fileId);
+    const apiHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+    const usedResp = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Contatos/usedRange`,{headers:apiHdrs});
+    if(!usedResp.ok) return;
+    const usedData = await usedResp.json();
+    const nextRow = (usedData.rowCount||1) + 1;
+    const agora = new Date().toLocaleDateString('pt-BR');
+    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Contatos/range(address='A${nextRow}:C${nextRow}')`,{method:'PATCH',headers:apiHdrs,body:JSON.stringify({values:[[produtor, telefone, agora]]})});
+    contatos[normalizarProdutor(produtor)] = telefone;
+    try { localStorage.setItem('cafe_contatos', JSON.stringify(contatos)); } catch(e) {}
+  } catch(e) { console.warn('[salvarContato] falhou:', e); }
+}
+
+async function carregarContatosOneDrive() {
+  if(!msToken) return;
+  try {
+    const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const path = `${pastaRaiz}/Ofertas_Registros.xlsx`;
+    const pathEnc = path.split('/').map(p=>encodeURIComponent(p)).join('/');
+    const checkR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathEnc}`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!checkR.ok) return; // workbook ainda não existe — sem contatos salvos ainda
+    const fileData = await checkR.json();
+    const fileId = fileData.id;
+    const abasR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!abasR.ok) return;
+    const abasData = await abasR.json();
+    if(!(abasData.value||[]).some(s=>s.name==='Contatos')) return;
+    const rangeR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Contatos/usedRange`,{headers:{Authorization:'Bearer '+msToken}});
+    if(!rangeR.ok) return;
+    const rangeData = await rangeR.json();
+    const rows = rangeData.values || [];
+    for(let i=1;i<rows.length;i++) {
+      const produtor = rows[i][0], telefone = rows[i][1];
+      if(produtor && telefone) contatos[normalizarProdutor(produtor)] = telefone; // último vence
+    }
+    try { localStorage.setItem('cafe_contatos', JSON.stringify(contatos)); } catch(e) {}
+  } catch(e) { console.warn('[carregarContatos] falhou:', e); }
 }
 
 async function getOrCreateExcel(path, mes) {
@@ -1691,10 +2240,16 @@ function textoLaudo(c) {
 }
 
 function buscarRegistro(id) {
-  let r = dados.find(x=>x.id===id);
+  let r = dados.find(x=>x.id===id) || dadosOferta.find(x=>x.id===id);
   if(!r) {
     for(const chave of Object.keys(cacheHistorico)) {
       r = cacheHistorico[chave].find(x=>x.id===id);
+      if(r) break;
+    }
+  }
+  if(!r) {
+    for(const chave of Object.keys(cacheHistoricoOferta)) {
+      r = cacheHistoricoOferta[chave].find(x=>x.id===id);
       if(r) break;
     }
   }
@@ -1799,24 +2354,34 @@ function trocarMesHistorico() {
   if(!mes || !ano) return;
   document.getElementById('hist-mes').textContent = mes + ' ' + ano;
   const chaveCache = `${mes}_${ano}`;
-  if(cacheHistorico[chaveCache] !== undefined) {
+  const cache = histModalidade==='oferta' ? cacheHistoricoOferta : cacheHistorico;
+  if(cache[chaveCache] !== undefined) {
     // Já tem em cache — renderiza direto
     renderHist(mes, ano);
   } else {
     // Busca no OneDrive
-    carregarDoOneDrive(mes, ano).catch(()=>{});
+    if(histModalidade==='oferta') carregarOfertasDoOneDrive(mes, ano).catch(()=>{});
+    else carregarDoOneDrive(mes, ano).catch(()=>{});
   }
+}
+
+// Decide qual array usar conforme a modalidade selecionada no toggle do Histórico:
+// cache para meses anteriores, dados[]/dadosOferta[] para o mês atual.
+function listaAtualHist(mes, ano) {
+  const hAgora = new Date();
+  const ehMesAtual = mes === MESES[hAgora.getMonth()] && ano === hAgora.getFullYear();
+  const chaveCache = `${mes}_${ano}`;
+  if(histModalidade === 'oferta') {
+    return ehMesAtual ? dadosOferta : (cacheHistoricoOferta[chaveCache] || []);
+  }
+  return ehMesAtual ? dados : (cacheHistorico[chaveCache] || []);
 }
 
 function renderHist(mesSel, anoSel) {
   const h = new Date();
   const mes = mesSel || MESES[h.getMonth()];
   const ano = anoSel || h.getFullYear();
-  const chaveCache = `${mes}_${ano}`;
-  // Decide qual array usar: cache para meses anteriores, dados[] para mês atual
-  const hAgora = new Date();
-  const ehMesAtual = mes === MESES[hAgora.getMonth()] && ano === hAgora.getFullYear();
-  const lista = ehMesAtual ? dados : (cacheHistorico[chaveCache] || []);
+  const lista = listaAtualHist(mes, ano);
   const c = document.getElementById('hist-container');
   document.getElementById('hist-mes').textContent = mes + ' ' + ano;
   if(!lista.length) {
@@ -1827,17 +2392,27 @@ function renderHist(mesSel, anoSel) {
     const tc = r.tipo==='beneficiado'?'tag-b':r.tipo==='coco'?'tag-c':'tag-e';
     const tl = r.tipo==='beneficiado'?'Beneficiado':r.tipo==='coco'?'Em Coco':'Escolha';
     const df = r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+    const statusCls = statusParaClasse(r.ultimoStatusOferta);
     return `<div class="hist-item" onclick="verDetalhe(${r.id})">
       <div class="hi-data">${df}</div>
-      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.origem?r.origem+' · ':''}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
+      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.modalidade==='oferta'?(r.lote+' · '):(r.origem?r.origem+' · ':'')}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
       <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="tag ${tc}">${tl}</span>
+        ${r.modalidade==='oferta'&&r.ultimoStatusOferta?`<span class="status-pill ${statusCls}">${r.ultimoStatusOferta}</span>`:''}
         ${r.editado?'<span class="tag" style="background:#FFF3CD;color:#8A6300;font-weight:600">✏️ EDITADO</span>':''}
         <span style="font-size:10px">${r.sinc?'🟢':'🟡'}</span>
       </div>
     </div>`;
   }).join('')+'</div>';
+}
+
+function statusParaClasse(status) {
+  if(status==='Fechada') return 'status-fechada';
+  if(status==='Recusada') return 'status-recusada';
+  if(status==='Perdida') return 'status-perdida';
+  if(status==='Aguardando retorno cliente') return 'status-aguardando';
+  return '';
 }
 
 function filtrarHist() {
@@ -1848,9 +2423,7 @@ function filtrarHist() {
   const h = new Date();
   const selMes = document.getElementById('hist-sel-mes')?.value || MESES[h.getMonth()];
   const selAno = parseInt(document.getElementById('hist-sel-ano')?.value) || h.getFullYear();
-  const chaveCache = `${selMes}_${selAno}`;
-  const ehMesAtual = selMes === MESES[h.getMonth()] && selAno === h.getFullYear();
-  const base = ehMesAtual ? dados : (cacheHistorico[chaveCache] || []);
+  const base = listaAtualHist(selMes, selAno);
   const lista = termo ? base.filter(r =>
     (r.produtor||'').toLowerCase().includes(termo) ||
     (r.lote||'').toLowerCase().includes(termo) ||
@@ -1870,12 +2443,14 @@ function filtrarHist() {
     const tc = r.tipo==='beneficiado'?'tag-b':r.tipo==='coco'?'tag-c':'tag-e';
     const tl = r.tipo==='beneficiado'?'Beneficiado':r.tipo==='coco'?'Em Coco':'Escolha';
     const df = r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+    const statusCls = statusParaClasse(r.ultimoStatusOferta);
     return `<div class="hist-item" onclick="verDetalhe(${r.id})">
       <div class="hi-data">${df}</div>
-      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.origem?r.origem+' · ':''}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
+      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.modalidade==='oferta'?(r.lote+' · '):(r.origem?r.origem+' · ':'')}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
       <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="tag ${tc}">${tl}</span>
+        ${r.modalidade==='oferta'&&r.ultimoStatusOferta?`<span class="status-pill ${statusCls}">${r.ultimoStatusOferta}</span>`:''}
         ${r.editado?'<span class="tag" style="background:#FFF3CD;color:#8A6300;font-weight:600">✏️ EDITADO</span>':''}
         <span style="font-size:10px">${r.sinc?'🟢':'🟡'}</span>
       </div>
@@ -1936,12 +2511,126 @@ function verDetalhe(id) {
   document.getElementById('btn-sinc').style.display = (!c.sinc&&msToken)?'block':'none';
   document.getElementById('share-section').style.display = 'block';
   document.getElementById('modal-foto').style.display = 'none'; // reseta antes de carregar
+  const ofertaSection = document.getElementById('oferta-section');
+  if(c.modalidade === 'oferta') {
+    ofertaSection.style.display = 'block';
+    document.getElementById('nova-oferta-form').style.display = 'none';
+    document.getElementById('oferta-lista').innerHTML = '<div style="font-size:12px;color:var(--text-light)">Carregando ofertas...</div>';
+    document.getElementById('agendar-frete-banner').style.display = 'none';
+    carregarOfertasNoModal(c);
+  } else {
+    ofertaSection.style.display = 'none';
+  }
   document.getElementById('modal').classList.add('open');
   // Carrega a foto de forma assíncrona (exibe no modal E alimenta o fotoCache do
   // compartilhamento no WhatsApp, assim que o modal abre — antes do usuário clicar em
   // "Compartilhar", pra não perder a ativação do usuário esperando rede na hora do clique).
   fotoCache[id] = null;
   carregarFotoModal(c);
+}
+
+// Guarda as ofertas do lote aberto no momento, pra edição de status não precisar buscar de novo
+let ofertasModalAtual = [];
+
+async function carregarOfertasNoModal(c) {
+  if(!msToken) {
+    document.getElementById('oferta-lista').innerHTML = '<div style="font-size:12px;color:var(--text-light)">Conecte ao Microsoft 365 para ver as ofertas registradas.</div>';
+    return;
+  }
+  const lista = await carregarRegistrosOfertaOneDrive(c.lote);
+  ofertasModalAtual = lista;
+  renderOfertasModal();
+}
+
+function renderOfertasModal() {
+  const box = document.getElementById('oferta-lista');
+  if(!ofertasModalAtual.length) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--text-light)">Nenhuma oferta registrada ainda para este lote.</div>';
+    document.getElementById('agendar-frete-banner').style.display = 'none';
+    return;
+  }
+  const ordenadas = [...ofertasModalAtual].sort((a,b)=> (b.dataOferta||'').localeCompare(a.dataOferta||''));
+  box.innerHTML = ordenadas.map(o => {
+    const statusCls = statusParaClasse(o.status);
+    const dfOferta = o.dataOferta ? new Date(o.dataOferta+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    const dfPag = o.dataPagamento ? new Date(o.dataPagamento+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    return `<div class="oferta-item">
+      <div class="oferta-item-top">
+        <span class="oferta-valor">${o.valor?('R$ '+o.valor):'—'}</span>
+        <span class="status-pill ${statusCls}">${o.status||'—'}</span>
+      </div>
+      <div class="oferta-meta">Oferta: ${dfOferta} · Pagamento: ${dfPag}${o.posicaoBolsa?' · Bolsa: '+o.posicaoBolsa+' ¢/lb':''}</div>
+    </div>`;
+  }).join('');
+  const fechada = ordenadas.find(o => o.status === 'Fechada');
+  document.getElementById('agendar-frete-banner').style.display = fechada ? 'flex' : 'none';
+}
+
+function toggleNovaOfertaForm() {
+  const f = document.getElementById('nova-oferta-form');
+  const abrindo = f.style.display !== 'block';
+  f.style.display = abrindo ? 'block' : 'none';
+  if(abrindo) {
+    ['nof-data','nof-valor','nof-pagamento','nof-bolsa'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+    document.getElementById('nof-status').value = 'Aguardando retorno cliente';
+  }
+}
+
+async function salvarNovaOferta() {
+  const c = buscarRegistro(itemId);
+  if(!c || c.modalidade !== 'oferta') return;
+  if(!msToken) { toastErr('Conecte ao Microsoft 365 para registrar a oferta.'); return; }
+  const dataOferta = document.getElementById('nof-data').value;
+  const valor = document.getElementById('nof-valor').value;
+  const dataPagamento = document.getElementById('nof-pagamento').value;
+  const posicaoBolsa = document.getElementById('nof-bolsa').value;
+  const status = document.getElementById('nof-status').value;
+  if(!dataOferta || !valor) { toastErr('Informe ao menos a data e o valor da oferta.'); return; }
+  const reg = { codigo: c.lote, produtor: c.produtor, dataOferta, valor, dataPagamento, posicaoBolsa, status };
+  try {
+    await appendRegistroOfertaOneDrive(reg);
+    ofertasModalAtual.unshift(reg);
+    renderOfertasModal();
+    toggleNovaOfertaForm();
+    toastOk('Oferta registrada!');
+    // Atualiza o "último status" denormalizado no registro de classificação, tanto local
+    // quanto na planilha, pra aparecer na lista do histórico sem precisar abrir o lote.
+    c.ultimoStatusOferta = status;
+    if(dados.includes(c)) salvarLocal();
+    if(dadosOferta.includes(c)) salvarLocalOferta();
+    atualizarUltimoStatusExcel(c, status).catch(()=>{});
+  } catch(e) {
+    toastErr('Erro ao salvar oferta: ' + (e.message||''));
+  }
+}
+
+// Reescreve só a célula de UltimoStatusOferta na linha do lote na planilha mensal —
+// não regrava a linha inteira pra não arriscar duplicar ou corromper os outros campos.
+async function atualizarUltimoStatusExcel(c, status) {
+  if(!c.data) return;
+  const d = new Date(c.data+'T12:00:00');
+  const ano = d.getFullYear(), mes = MESES[d.getMonth()];
+  const nomeArq = `Ofertas_${ano}.xlsx`;
+  const pastaRaiz = odPath.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const pathArq = `${pastaRaiz}/${nomeArq}`;
+  const pathArqEnc = pathArq.split('/').map(p => encodeURIComponent(p)).join('/');
+  const checkR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${pathArqEnc}`,{headers:{Authorization:'Bearer '+msToken}});
+  if(!checkR.ok) return;
+  const fileData = await checkR.json();
+  const fileId = fileData.id;
+  const apiHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
+  const rangeR = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/usedRange`,{headers:apiHdrs});
+  if(!rangeR.ok) return;
+  const rangeData = await rangeR.json();
+  const rows = rangeData.values || [];
+  const colUltimoStatus = colLetra(28); // coluna 28 = UltimoStatusOferta
+  for(let i=1;i<rows.length;i++) {
+    if(rows[i][2] === c.lote) { // coluna 3 = Código
+      const linhaExcel = i + 1;
+      await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='${colUltimoStatus}${linhaExcel}')`,{method:'PATCH',headers:apiHdrs,body:JSON.stringify({values:[[status]]})});
+      break;
+    }
+  }
 }
 
 async function sincItem() {
@@ -1955,8 +2644,8 @@ function closeModal() {
 }
 function updateBadge() {
   const badge = document.getElementById('badge');
-  const pendentes = dados.filter(d => !d.sinc).length;
-  badge.textContent = dados.length;
+  const pendentes = dados.filter(d => !d.sinc).length + dadosOferta.filter(d => !d.sinc).length;
+  badge.textContent = dados.length + dadosOferta.length;
   badge.style.background = pendentes > 0 ? '#C62828' : '';
   badge.title = pendentes > 0 ? pendentes + ' pendente(s) de sincronização com o OneDrive' : '';
 }
@@ -1966,6 +2655,35 @@ function setSinc(t, msg) {
 }
 function toastOk(m) { const t=document.getElementById('toast-ok'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3500); }
 function toastErr(m) { const t=document.getElementById('toast-err'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),5000); }
+
+// IMPORTANTE: isto NÃO é segurança real — é um HTML estático, então qualquer pessoa com
+// DevTools consegue ler o PIN salvo ou pular esta checagem chamando a função direto no
+// console. Serve só para evitar que alguém veja valores de oferta sem querer/por engano
+// (ex: dividindo o mesmo tablet). Para bloqueio de verdade, use permissão de pasta no OneDrive.
+function solicitarPinOferta(callback) {
+  if(ofertaDesbloqueada) { callback(); return; }
+  if(!pinOferta) {
+    toastErr('Configure um PIN de 4 dígitos em Config antes de usar Ofertas.');
+    return;
+  }
+  const digitado = prompt('Digite o PIN de 4 dígitos para acessar Ofertas:');
+  if(digitado === null) return; // usuário cancelou
+  if(digitado.trim() === pinOferta) {
+    ofertaDesbloqueada = true;
+    callback();
+  } else {
+    toastErr('PIN incorreto.');
+  }
+}
+
+function salvarPinOferta() {
+  const v = (document.getElementById('cfg-pin-oferta').value || '').trim();
+  if(!/^\d{4}$/.test(v)) { toastErr('O PIN precisa ter exatamente 4 dígitos numéricos.'); return; }
+  pinOferta = v;
+  localStorage.setItem('cafe_pin_oferta', v);
+  document.getElementById('cfg-pin-oferta').value = '';
+  toastOk('PIN de Ofertas salvo.');
+}
 
 function salvarCfg() {
   clientId = document.getElementById('cfg-client').value.trim();
@@ -1983,6 +2701,9 @@ function salvarPath() {
 function resetForm() {
   clf=''; tipo=''; origem=''; selbBC={}; selbE={}; fotoBC=null; fotoE=null;
   edicaoOrigemId = null;
+  codigoOfertaEdicao = null;
+  selectModalidade('deposito');
+  const fContato = document.getElementById('f-contato'); if(fContato) fContato.value='';
   const banner = document.getElementById('banner-edicao'); if(banner) banner.style.display='none';
   const btnSalvarTxt = document.querySelector('#btn-salvar-row .btn-primary'); if(btnSalvarTxt) btnSalvarTxt.textContent='Salvar Classificação';
   document.querySelectorAll('.clf-btn,.tipo-card,.origem-btn').forEach(el=>el.classList.remove('selected'));
