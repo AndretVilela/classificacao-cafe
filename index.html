@@ -1058,6 +1058,8 @@ async function carregarOfertasDoOneDrive(mesSel, anoSel) {
   } finally {
     if(loading) loading.style.display = 'none';
     if(container) container.style.display = 'block';
+    const hFin = new Date();
+    if(mes === MESES[hFin.getMonth()] && ano === hFin.getFullYear()) ofertaCarregadaMesAtual = true;
     if(histModalidade === 'oferta') renderHist(mes, ano);
   }
 }
@@ -1157,6 +1159,8 @@ function showScreen(n, btn) {
   }
 }
 
+let ofertaCarregadaMesAtual = false; // vira true assim que o mês atual foi buscado no OneDrive ao menos uma vez
+
 function trocarModalidadeHistorico(m) {
   histModalidade = m;
   document.getElementById('toggle-hist-deposito').classList.toggle('active', m==='deposito');
@@ -1167,6 +1171,13 @@ function trocarModalidadeHistorico(m) {
   const cache = m==='oferta' ? cacheHistoricoOferta : cacheHistorico;
   const hAgora = new Date();
   const ehMesAtual = mes === MESES[hAgora.getMonth()] && ano === hAgora.getFullYear();
+  // Depósito já é carregado ao conectar (onConnected -> carregarDoOneDrive()), então pra
+  // ele o mês atual pode confiar no que já está em dados[]. Oferta só é buscada aqui —
+  // se ainda não foi buscada nesta sessão, precisa ir ao OneDrive mesmo sendo o mês atual.
+  if(m==='oferta' && ehMesAtual && !ofertaCarregadaMesAtual && msToken) {
+    carregarOfertasDoOneDrive(mes, ano).catch(()=>{});
+    return;
+  }
   if(ehMesAtual || cache[chaveCache] !== undefined) {
     renderHist(mes, ano);
   } else if(msToken) {
@@ -1602,6 +1613,7 @@ function onConnected() {
   setSinc('ok','Conectado');
   setFormularioBloqueado(false);
   carregarDoOneDrive().catch(()=>{});
+  carregarOfertasDoOneDrive().catch(()=>{});
   carregarContatosOneDrive().catch(()=>{});
   sincronizarPendentes();
 }
@@ -2452,14 +2464,7 @@ function filtrarHist() {
 }
 
 function verDetalhe(id) {
-  // Busca em dados[] e em todos os caches de meses anteriores
-  let c = dados.find(x=>x.id===id);
-  if(!c) {
-    for(const chave of Object.keys(cacheHistorico)) {
-      c = cacheHistorico[chave].find(x=>x.id===id);
-      if(c) break;
-    }
-  }
+  const c = buscarRegistro(id);
   if(!c) return;
   itemId = id;
   const tl = c.tipo==='beneficiado'?'Beneficiado':c.tipo==='coco'?'Em Coco':'Escolha';
