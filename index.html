@@ -1926,7 +1926,33 @@ async function garantirAbaRegistrosOferta(fileId) {
     await new Promise(res=>setTimeout(res,2000));
     await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='A1:H1')`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({values:[['Codigo','Produtor','DataOferta','ValorOfertado','DataPagamento','PosicaoBolsa','Status','DataRegistro']]})});
     await new Promise(res=>setTimeout(res,1000));
+    // Formata as colunas de data (C e E) como Texto ANTES de qualquer gravação. Sem isso,
+    // o Excel/Graph API converte silenciosamente strings tipo "2026-09-03" em número de série
+    // de data ao gravar — e a leitura seguinte devolve um number, não string, quebrando tudo
+    // que espera texto (ex: .localeCompare) e some com a oferta ao reabrir.
+    try {
+      const linhasFormato = Array.from({length:4999}, () => ['@']);
+      await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='C2:C5000')/format/numberFormat`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({numberFormat:linhasFormato})});
+      await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='E2:E5000')/format/numberFormat`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({numberFormat:linhasFormato})});
+    } catch(e) { console.warn('[garantirAbaRegistrosOferta] falha ao formatar colunas de data como texto:', e); }
   }
+}
+
+// Converte um valor vindo do Excel para data em formato ISO (YYYY-MM-DD) de forma segura.
+// Cobre os dois casos possíveis: texto já no formato certo (comportamento esperado, com a
+// coluna formatada como Texto) OU número de série de data do Excel (dado legado/corrompido,
+// gravado antes da coluna ter sido formatada como Texto). Sem essa normalização, qualquer
+// valor numérico quebra o .localeCompare() na ordenação das ofertas.
+function excelValorParaDataISO(v) {
+  if(v === null || v === undefined || v === '') return '';
+  if(typeof v === 'number') {
+    const ms = Math.round((v - 25569) * 86400 * 1000); // epoch do Excel: 1899-12-30
+    const d = new Date(ms);
+    if(isNaN(d.getTime())) return '';
+    const yyyy = d.getUTCFullYear(), mm = String(d.getUTCMonth()+1).padStart(2,'0'), dd = String(d.getUTCDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return String(v);
 }
 
 async function appendRegistroOfertaOneDrive(reg) {
@@ -1967,7 +1993,7 @@ async function carregarRegistrosOfertaOneDrive(codigo) {
     const resultado = [];
     for(let i=1;i<rows.length;i++) {
       const r = rows[i];
-      if(r[0] === codigo) resultado.push({ codigo:r[0], produtor:r[1], dataOferta:r[2], valor:r[3], dataPagamento:r[4], posicaoBolsa:r[5], status:r[6], dataRegistro:r[7] });
+      if(r[0] === codigo) resultado.push({ codigo:r[0], produtor:r[1], dataOferta:excelValorParaDataISO(r[2]), valor:r[3], dataPagamento:excelValorParaDataISO(r[4]), posicaoBolsa:r[5], status:r[6], dataRegistro:r[7] });
     }
     return resultado;
   } catch(e) { console.warn('[carregarRegistrosOferta] falhou:', e); return []; }
@@ -2218,6 +2244,23 @@ function textoLaudo(c) {
       : `*Sacas:* ${c.sacas||'—'} sc`,
     `*Lote/NF:* ${c.lote||'—'}`,
   ];
+  if(c.modalidade === 'oferta') {
+    // Puxa a oferta mais recente do lote. ofertasModalAtual só é confiável se o modal
+    // desse mesmo lote estiver aberto (é o caso normal, já que o botão de compartilhar
+    // fica dentro do modal) — por isso o filtro por c.lote, e um fallback pro status
+    // denormalizado em c.ultimoStatusOferta se por acaso a lista ainda não carregou.
+    const ofertasDoLote = (typeof ofertasModalAtual !== 'undefined' ? ofertasModalAtual : []).filter(o => o.codigo === c.lote);
+    if(ofertasDoLote.length) {
+      const ult = [...ofertasDoLote].sort((a,b)=> String(b.dataOferta||'').localeCompare(String(a.dataOferta||'')))[0];
+      const dOf = ult.dataOferta ? new Date(String(ult.dataOferta)+'T12:00:00') : null;
+      const dfOferta = dOf && !isNaN(dOf.getTime()) ? dOf.toLocaleDateString('pt-BR') : '—';
+      linhas.push(`*Valor Ofertado:* ${ult.valor?('R$ '+ult.valor):'—'}`);
+      linhas.push(`*Status da Oferta:* ${ult.status||'—'}`);
+      linhas.push(`*Data da Oferta:* ${dfOferta}`);
+    } else if(c.ultimoStatusOferta) {
+      linhas.push(`*Status da Oferta:* ${c.ultimoStatusOferta}`);
+    }
+  }
   if(c.tipo !== 'escolha') {
     if(c.catacao)  linhas.push(`*% Catação:* ${c.catacao}%`);
     if(c.impureza) linhas.push(`*% Impureza:* ${c.impureza}%`);
@@ -2547,11 +2590,13 @@ function renderOfertasModal() {
     document.getElementById('agendar-frete-banner').style.display = 'none';
     return;
   }
-  const ordenadas = [...ofertasModalAtual].sort((a,b)=> (b.dataOferta||'').localeCompare(a.dataOferta||''));
+  const ordenadas = [...ofertasModalAtual].sort((a,b)=> String(b.dataOferta||'').localeCompare(String(a.dataOferta||'')));
   box.innerHTML = ordenadas.map(o => {
     const statusCls = statusParaClasse(o.status);
-    const dfOferta = o.dataOferta ? new Date(o.dataOferta+'T12:00:00').toLocaleDateString('pt-BR') : '—';
-    const dfPag = o.dataPagamento ? new Date(o.dataPagamento+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+    const dOf = o.dataOferta ? new Date(String(o.dataOferta)+'T12:00:00') : null;
+    const dPg = o.dataPagamento ? new Date(String(o.dataPagamento)+'T12:00:00') : null;
+    const dfOferta = dOf && !isNaN(dOf.getTime()) ? dOf.toLocaleDateString('pt-BR') : '—';
+    const dfPag = dPg && !isNaN(dPg.getTime()) ? dPg.toLocaleDateString('pt-BR') : '—';
     return `<div class="oferta-item">
       <div class="oferta-item-top">
         <span class="oferta-valor">${o.valor?('R$ '+o.valor):'—'}</span>
