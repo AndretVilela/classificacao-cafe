@@ -215,6 +215,9 @@ body {
 .status-recusada { background: #FBE1E1; color: #A32626; }
 .status-fechada { background: #DFF3DF; color: #276B27; }
 .status-perdida { background: #E6E6E6; color: #5C5C5C; }
+.status-frete { background: #DCEEFB; color: #1B5E8A; }
+.status-recebido { background: #D7ECD9; color: #1F6B2E; }
+.status-pill-select { appearance: none; -webkit-appearance: none; border: none; font-family: 'DM Sans',sans-serif; font-size: 11px; font-weight: 500; padding: 3px 22px 3px 10px; border-radius: 20px; cursor: pointer; white-space: nowrap; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='%23555'/></svg>"); background-repeat: no-repeat; background-position: right 8px center; background-size: 8px 5px; }
 .agendar-frete-banner { background: #DFF3DF; border: 1.5px solid #A8D9A8; border-radius: 10px; padding: 10px 13px; margin-top: 10px; font-size: 13px; color: #276B27; font-weight: 500; display: flex; align-items: center; gap: 8px; }
 .nova-oferta-form { background: #fff; border: 1.5px solid var(--border-mid); border-radius: 10px; padding: 12px; margin-top: 10px; display: none; }
 .nova-oferta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
@@ -632,6 +635,8 @@ body {
             <option value="Aguardando retorno cliente">Aguardando retorno cliente</option>
             <option value="Recusada">Recusada</option>
             <option value="Fechada">Fechada</option>
+            <option value="Frete Agendado">Frete Agendado</option>
+            <option value="Café Recebido">Café Recebido</option>
             <option value="Perdida">Perdida</option>
           </select>
         </div>
@@ -915,6 +920,7 @@ async function carregarDoOneDrive(mesSel, anoSel) {
         arrobas:   isNovoFormato ? (r[23] || '') : '',
         prevSacas: isNovoFormato ? (r[24] || '') : '',
         origem:    r[25] || '',
+        contato:   r[26] || '',
         sinc: true,
         fromCloud: true
       });
@@ -1790,7 +1796,7 @@ async function appendExcel(reg, fotoUrl) {
     reg.renda||'', reg.bebida||'', reg.bebidaObs||'', def,
     reg.aprov||'', impTotal||'', reg.impPau||'', reg.impPedra||'', reg.impCasca||'',
     reg.obs||'', fotoUrl,
-    reg.arrobas||'', reg.prevSacas||'', reg.origem||''
+    reg.arrobas||'', reg.prevSacas||'', reg.origem||'', reg.contato||''
   ];
   const apiHdrs = {'Authorization':'Bearer '+msToken,'Content-Type':'application/json'};
   await new Promise(r=>setTimeout(r,1000));
@@ -1806,7 +1812,7 @@ async function appendExcel(reg, fotoUrl) {
   const nextRow = (usedData.rowCount||1) + 1;
   console.log('Inserindo linha na linha:', nextRow);
   const writeResp = await fetch(
-    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:Z${nextRow}')`,
+    `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A${nextRow}:AA${nextRow}')`,
     {method:'PATCH', headers:apiHdrs, body:JSON.stringify({values:[linha]})}
   );
   if(!writeResp.ok) {
@@ -1924,7 +1930,7 @@ async function garantirAbaRegistrosOferta(fileId) {
     const cr = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets`,{method:'POST',headers:baseHdrs,body:JSON.stringify({name:'Registros'})});
     if(!cr.ok) throw new Error('Erro ao criar aba Registros: '+cr.status);
     await new Promise(res=>setTimeout(res,2000));
-    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='A1:H1')`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({values:[['Codigo','Produtor','DataOferta','ValorOfertado','DataPagamento','PosicaoBolsa','Status','DataRegistro']]})});
+    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='A1:I1')`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({values:[['Codigo','Produtor','DataOferta','ValorOfertado','DataPagamento','PosicaoBolsa','Status','DataRegistro','RegId']]})});
     await new Promise(res=>setTimeout(res,1000));
     // Formata as colunas de data (C e E) como Texto ANTES de qualquer gravação. Sem isso,
     // o Excel/Graph API converte silenciosamente strings tipo "2026-09-03" em número de série
@@ -1935,6 +1941,15 @@ async function garantirAbaRegistrosOferta(fileId) {
       await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='C2:C5000')/format/numberFormat`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({numberFormat:linhasFormato})});
       await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='E2:E5000')/format/numberFormat`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({numberFormat:linhasFormato})});
     } catch(e) { console.warn('[garantirAbaRegistrosOferta] falha ao formatar colunas de data como texto:', e); }
+  } else {
+    // Aba já existia de antes da coluna RegId existir (recurso de editar status é novo).
+    // Retrofit: adiciona o cabeçalho em I1 se ainda não tiver, sem mexer nos dados já gravados.
+    const checkI = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='I1')`,{headers:baseHdrs});
+    const iData = await checkI.json().catch(()=>({values:[['']]}));
+    if(!iData.values?.[0]?.[0]) {
+      await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='I1')`,{method:'PATCH',headers:baseHdrs,body:JSON.stringify({values:[['RegId']]})});
+      await new Promise(res=>setTimeout(res,1000));
+    }
   }
 }
 
@@ -1964,8 +1979,8 @@ async function appendRegistroOfertaOneDrive(reg) {
   const usedData = await usedResp.json();
   const nextRow = (usedData.rowCount||1) + 1;
   const agora = new Date().toLocaleDateString('pt-BR');
-  const linha = [reg.codigo, reg.produtor||'', reg.dataOferta||'', reg.valor||'', reg.dataPagamento||'', reg.posicaoBolsa||'', reg.status||'', agora];
-  const writeResp = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='A${nextRow}:H${nextRow}')`,{method:'PATCH',headers:apiHdrs,body:JSON.stringify({values:[linha]})});
+  const linha = [reg.codigo, reg.produtor||'', reg.dataOferta||'', reg.valor||'', reg.dataPagamento||'', reg.posicaoBolsa||'', reg.status||'', agora, reg.regId||''];
+  const writeResp = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/Registros/range(address='A${nextRow}:I${nextRow}')`,{method:'PATCH',headers:apiHdrs,body:JSON.stringify({values:[linha]})});
   if(!writeResp.ok) {
     const e = await writeResp.json().catch(()=>({}));
     throw new Error('Erro ao gravar oferta: '+writeResp.status+' — '+(e.error?.message||''));
@@ -1990,11 +2005,17 @@ async function carregarRegistrosOfertaOneDrive(codigo) {
     if(!rangeR.ok) return [];
     const rangeData = await rangeR.json();
     const rows = rangeData.values || [];
-    const resultado = [];
+    const porRegId = new Map(); // dedup: a linha mais recente de cada RegId "vence" (editar status = novo append)
     for(let i=1;i<rows.length;i++) {
       const r = rows[i];
-      if(r[0] === codigo) resultado.push({ codigo:r[0], produtor:r[1], dataOferta:excelValorParaDataISO(r[2]), valor:r[3], dataPagamento:excelValorParaDataISO(r[4]), posicaoBolsa:r[5], status:r[6], dataRegistro:r[7] });
+      if(r[0] !== codigo) continue;
+      // Linhas antigas (gravadas antes do RegId existir) não têm coluna I — tratamos cada
+      // uma como uma oferta distinta e imutável, usando a posição da linha como id único,
+      // pra não misturar ofertas antigas diferentes que por acaso têm os mesmos dados.
+      const regId = r[8] || `legado-${codigo}-${i}`;
+      porRegId.set(regId, { codigo:r[0], produtor:r[1], dataOferta:excelValorParaDataISO(r[2]), valor:r[3], dataPagamento:excelValorParaDataISO(r[4]), posicaoBolsa:r[5], status:r[6], dataRegistro:r[7], regId });
     }
+    const resultado = Array.from(porRegId.values());
     return resultado;
   } catch(e) { console.warn('[carregarRegistrosOferta] falhou:', e); return []; }
 }
@@ -2110,7 +2131,7 @@ async function garantirAba(fileId, mes) {
     }
     await new Promise(r=>setTimeout(r,3000));
   }
-  const cabHdrs = [['Dia','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.','Origem']];
+  const cabHdrs = [['Dia','Classificador','Lote/NF','Produtor','Kg','Sacas/Arrobas','Tipo','%Catacao','%Impureza','Umidade%','Pen17+%','PenFundo%','Renda%','Bebida','Obs.Bebida','Defeitos','%Aproveit.','%ImpTotal','ImpPau%','ImpPedra%','ImpCasca%','Observacoes','Foto','Arrobas','Prev.Sacas.Benef.','Origem','Contato']];
   await new Promise(r=>setTimeout(r,1000));
   const checkHdr = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1')`,
@@ -2120,15 +2141,15 @@ async function garantirAba(fileId, mes) {
   if(!hdrData.values?.[0]?.[0]) {
     console.log('Inserindo cabeçalhos na aba:', mes);
     const hdrResp = await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:Z1')`,
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='A1:AA1')`,
       {method:'PATCH', headers:baseHdrs, body:JSON.stringify({values:cabHdrs})}
     );
     if(!hdrResp.ok) console.warn('Cabeçalho falhou:', hdrResp.status);
     await new Promise(r=>setTimeout(r,1500));
   } else {
-    // Aba já existia (planilha criada antes da coluna Origem existir). Verifica se
-    // a coluna Z já tem o cabeçalho "Origem" e, se não tiver, adiciona agora —
-    // sem isso, abas antigas ficariam sem cabeçalho na nova coluna.
+    // Aba já existia de antes de alguma dessas colunas existir (Origem em Z, Contato em AA).
+    // Verifica cada uma isoladamente e completa o que faltar — sem isso, abas antigas
+    // ficariam com dados na coluna mas sem cabeçalho, ou pior, sem a coluna existir.
     const checkZ = await fetch(
       `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='Z1')`,
       {headers:baseHdrs}
@@ -2138,6 +2159,18 @@ async function garantirAba(fileId, mes) {
       await fetch(
         `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='Z1')`,
         {method:'PATCH', headers:baseHdrs, body:JSON.stringify({values:[['Origem']]})}
+      );
+      await new Promise(r=>setTimeout(r,1000));
+    }
+    const checkAA = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='AA1')`,
+      {headers:baseHdrs}
+    );
+    const aaData = await checkAA.json().catch(()=>({values:[['']]}));
+    if(!aaData.values?.[0]?.[0]) {
+      await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${encodeURIComponent(mes)}/range(address='AA1')`,
+        {method:'PATCH', headers:baseHdrs, body:JSON.stringify({values:[['Contato']]})}
       );
       await new Promise(r=>setTimeout(r,1000));
     }
@@ -2443,7 +2476,7 @@ function renderHist(mesSel, anoSel) {
     const statusCls = statusParaClasse(r.ultimoStatusOferta);
     return `<div class="hist-item" onclick="verDetalhe(${r.id})">
       <div class="hi-data">${df}</div>
-      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.modalidade==='oferta'?(r.lote+' · '):(r.origem?r.origem+' · ':'')}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
+      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.modalidade==='oferta'?(r.lote+' · '):(r.origem?r.origem+' · ':'')}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}${r.contato?' · 📞 '+r.contato:''}</div></div>
       <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="tag ${tc}">${tl}</span>
@@ -2460,8 +2493,12 @@ function statusParaClasse(status) {
   if(status==='Recusada') return 'status-recusada';
   if(status==='Perdida') return 'status-perdida';
   if(status==='Aguardando retorno cliente') return 'status-aguardando';
+  if(status==='Frete Agendado') return 'status-frete';
+  if(status==='Café Recebido') return 'status-recebido';
   return '';
 }
+
+const STATUS_OFERTA_OPTIONS = ['Aguardando retorno cliente','Recusada','Fechada','Frete Agendado','Café Recebido','Perdida'];
 
 function filtrarHist() {
   const termo = (document.getElementById('hist-busca')?.value || '').toLowerCase().trim();
@@ -2478,6 +2515,7 @@ function filtrarHist() {
     (r.bebida||'').toLowerCase().includes(termo) ||
     (r.bebidaObs||'').toLowerCase().includes(termo) ||
     (r.clf||'').toLowerCase().includes(termo) ||
+    (r.contato||'').toLowerCase().includes(termo) ||
     (r.obs||'').toLowerCase().includes(termo)
   ) : base;
   const c = document.getElementById('hist-container');
@@ -2494,7 +2532,7 @@ function filtrarHist() {
     const statusCls = statusParaClasse(r.ultimoStatusOferta);
     return `<div class="hist-item" onclick="verDetalhe(${r.id})">
       <div class="hi-data">${df}</div>
-      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.modalidade==='oferta'?(r.lote+' · '):(r.origem?r.origem+' · ':'')}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}</div></div>
+      <div><div class="hi-produtor">${r.produtor||'—'}</div><div class="hi-sub">${r.modalidade==='oferta'?(r.lote+' · '):(r.origem?r.origem+' · ':'')}${r.bebida||''} ${r.bebidaObs?'· '+r.bebidaObs:''}${r.contato?' · 📞 '+r.contato:''}</div></div>
       <div class="hi-sacas">${r.kg?r.kg+' kg':r.sacas?r.sacas+' sc':'—'}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="tag ${tc}">${tl}</span>
@@ -2514,6 +2552,7 @@ function verDetalhe(id) {
   const df = c.data?new Date(c.data+'T12:00:00').toLocaleDateString('pt-BR'):'—';
   document.getElementById('modal-title').textContent = (c.produtor||'Classificação') + (c.editado ? ' ✏️ (Editado)' : '');
   let rows=[['Data',df],['Classificador',c.clf||'—'],['Lote/NF',c.lote||'—']];
+  if(c.contato) rows.push(['Contato',c.contato]);
   if(c.editado) {
     const orig = c.origemEdicaoId ? buscarRegistro(c.origemEdicaoId) : null;
     rows.push(['Edição', orig ? `Baseada no registro original de ${orig.data?new Date(orig.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'}` : 'Baseada em registro anterior (não encontrado no cache)']);
@@ -2597,16 +2636,51 @@ function renderOfertasModal() {
     const dPg = o.dataPagamento ? new Date(String(o.dataPagamento)+'T12:00:00') : null;
     const dfOferta = dOf && !isNaN(dOf.getTime()) ? dOf.toLocaleDateString('pt-BR') : '—';
     const dfPag = dPg && !isNaN(dPg.getTime()) ? dPg.toLocaleDateString('pt-BR') : '—';
+    const opcoes = STATUS_OFERTA_OPTIONS.map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('');
     return `<div class="oferta-item">
       <div class="oferta-item-top">
         <span class="oferta-valor">${o.valor?('R$ '+o.valor):'—'}</span>
-        <span class="status-pill ${statusCls}">${o.status||'—'}</span>
+        <select class="status-pill-select ${statusCls}" onchange="editarStatusOferta('${o.regId}', this.value)">${opcoes}</select>
       </div>
       <div class="oferta-meta">Oferta: ${dfOferta} · Pagamento: ${dfPag}${o.posicaoBolsa?' · Bolsa: '+o.posicaoBolsa+' ¢/lb':''}</div>
     </div>`;
   }).join('');
   const fechada = ordenadas.find(o => o.status === 'Fechada');
   document.getElementById('agendar-frete-banner').style.display = fechada ? 'flex' : 'none';
+}
+
+// Altera o status de uma oferta já salva. Como o histórico de ofertas é append-only na
+// planilha (nunca sobrescrevemos uma linha existente — mesmo padrão já usado pra Contatos),
+// "editar" aqui grava uma NOVA linha com o mesmo RegId e o status novo; na leitura, a linha
+// mais recente de cada RegId é a que vale. A data, valor e demais dados da oferta original
+// não mudam — só o status.
+async function editarStatusOferta(regId, novoStatus) {
+  const o = ofertasModalAtual.find(x => x.regId === regId);
+  if(!o || o.status === novoStatus) return;
+  if(!msToken) { toastErr('Conecte ao Microsoft 365 para alterar o status.'); renderOfertasModal(); return; }
+  const statusAnterior = o.status;
+  o.status = novoStatus; // atualiza a UI imediatamente; desfaz abaixo se a gravação falhar
+  renderOfertasModal();
+  try {
+    await appendRegistroOfertaOneDrive({ codigo:o.codigo, produtor:o.produtor, dataOferta:o.dataOferta, valor:o.valor, dataPagamento:o.dataPagamento, posicaoBolsa:o.posicaoBolsa, status:novoStatus, regId });
+    toastOk('Status atualizado!');
+    // Reflete no "último status" denormalizado (usado no histórico e no laudo), tomando
+    // por base a oferta mais recente por data — não necessariamente a que acabou de mudar.
+    const c = buscarRegistro(itemId);
+    if(c) {
+      const maisRecente = [...ofertasModalAtual].filter(x=>x.codigo===c.lote).sort((a,b)=> String(b.dataOferta||'').localeCompare(String(a.dataOferta||'')))[0];
+      if(maisRecente) {
+        c.ultimoStatusOferta = maisRecente.status;
+        if(dados.includes(c)) salvarLocal();
+        if(dadosOferta.includes(c)) salvarLocalOferta();
+        atualizarUltimoStatusExcel(c, maisRecente.status).catch(()=>{});
+      }
+    }
+  } catch(e) {
+    o.status = statusAnterior;
+    renderOfertasModal();
+    toastErr('Erro ao atualizar status: ' + (e.message||''));
+  }
 }
 
 function toggleNovaOfertaForm() {
@@ -2629,7 +2703,8 @@ async function salvarNovaOferta() {
   const posicaoBolsa = document.getElementById('nof-bolsa').value;
   const status = document.getElementById('nof-status').value;
   if(!dataOferta || !valor) { toastErr('Informe ao menos a data e o valor da oferta.'); return; }
-  const reg = { codigo: c.lote, produtor: c.produtor, dataOferta, valor, dataPagamento, posicaoBolsa, status };
+  const regId = 'OF'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  const reg = { codigo: c.lote, produtor: c.produtor, dataOferta, valor, dataPagamento, posicaoBolsa, status, regId };
   try {
     await appendRegistroOfertaOneDrive(reg);
     ofertasModalAtual.unshift(reg);
