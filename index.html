@@ -209,6 +209,7 @@ body {
 .oferta-item { background: var(--cream); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; }
 .oferta-item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .oferta-valor { font-weight: 600; color: var(--cafe); font-size: 15px; }
+.oferta-seq { font-size: 11px; font-weight: 600; color: var(--cafe-mid); background: var(--cream-dark); border: 1px solid var(--border-mid); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
 .oferta-meta { color: var(--text-light); font-size: 12px; }
 .status-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
 .status-aguardando { background: #FFF3CD; color: #8A6300; }
@@ -855,7 +856,7 @@ async function carregarDoOneDrive(mesSel, anoSel) {
       setSinc('ok','Conectado');
       toastOk('Sem classificações em ' + mes + ' ' + ano + '.');
       cacheHistorico[`${mes}_${ano}`] = [];
-      renderHist(mes, ano);
+      renderHistRespeitandoBusca(mes, ano);
       return;
     }
     const rangeR = await fetch(
@@ -946,7 +947,7 @@ async function carregarDoOneDrive(mesSel, anoSel) {
   } finally {
     if(loading) loading.style.display = 'none';
     if(container) container.style.display = 'block';
-    renderHist(mes, ano);
+    renderHistRespeitandoBusca(mes, ano);
   }
 }
 
@@ -1066,7 +1067,7 @@ async function carregarOfertasDoOneDrive(mesSel, anoSel) {
     if(container) container.style.display = 'block';
     const hFin = new Date();
     if(mes === MESES[hFin.getMonth()] && ano === hFin.getFullYear()) ofertaCarregadaMesAtual = true;
-    if(histModalidade === 'oferta') renderHist(mes, ano);
+    if(histModalidade === 'oferta') renderHistRespeitandoBusca(mes, ano);
   }
 }
 
@@ -1157,7 +1158,7 @@ function showScreen(n, btn) {
     iniciarSeletorMes();
     const mes = document.getElementById('hist-sel-mes')?.value;
     const ano = parseInt(document.getElementById('hist-sel-ano')?.value);
-    renderHist(mes, ano);
+    renderHistRespeitandoBusca(mes, ano);
     if(msToken) {
       if(histModalidade === 'oferta') carregarOfertasDoOneDrive(mes, ano).catch(()=>{});
       else carregarDoOneDrive(mes, ano).catch(()=>{});
@@ -1185,12 +1186,12 @@ function trocarModalidadeHistorico(m) {
     return;
   }
   if(ehMesAtual || cache[chaveCache] !== undefined) {
-    renderHist(mes, ano);
+    renderHistRespeitandoBusca(mes, ano);
   } else if(msToken) {
     if(m==='oferta') carregarOfertasDoOneDrive(mes, ano).catch(()=>{});
     else carregarDoOneDrive(mes, ano).catch(()=>{});
   } else {
-    renderHist(mes, ano);
+    renderHistRespeitandoBusca(mes, ano);
   }
 }
 
@@ -2438,7 +2439,7 @@ function trocarMesHistorico() {
   const cache = histModalidade==='oferta' ? cacheHistoricoOferta : cacheHistorico;
   if(cache[chaveCache] !== undefined) {
     // Já tem em cache — renderiza direto
-    renderHist(mes, ano);
+    renderHistRespeitandoBusca(mes, ano);
   } else {
     // Busca no OneDrive
     if(histModalidade==='oferta') carregarOfertasDoOneDrive(mes, ano).catch(()=>{});
@@ -2499,6 +2500,19 @@ function statusParaClasse(status) {
 }
 
 const STATUS_OFERTA_OPTIONS = ['Aguardando retorno cliente','Recusada','Fechada','Frete Agendado','Café Recebido','Perdida'];
+
+// Ponto único para re-renderizar a tela de Histórico depois de qualquer carregamento
+// assíncrono (troca de mês, troca de modalidade, retorno do OneDrive). Antes, esses
+// pontos chamavam renderHist() direto — o que substituía a lista pela versão SEM
+// filtro sempre que um carregamento terminava, dando a impressão de que a busca
+// "não funcionava" na aba Oferta (cujos dados chegam do OneDrive de forma assíncrona
+// e recarregam com mais frequência que os de Depósito). Agora, se houver um termo
+// digitado no campo de busca, ele é reaplicado.
+function renderHistRespeitandoBusca(mes, ano) {
+  const termo = (document.getElementById('hist-busca')?.value || '').trim();
+  if(termo) filtrarHist();
+  else renderHist(mes, ano);
+}
 
 function filtrarHist() {
   const termo = (document.getElementById('hist-busca')?.value || '').toLowerCase().trim();
@@ -2629,6 +2643,16 @@ function renderOfertasModal() {
     document.getElementById('agendar-frete-banner').style.display = 'none';
     return;
   }
+  // Numera as ofertas na ordem cronológica em que foram feitas (Oferta 1 = a mais
+  // antiga), independente da ordem de exibição (mais recente primeiro). O regId é
+  // gerado uma única vez, na criação da oferta, e se mantém mesmo quando o status é
+  // atualizado depois — por isso ele serve de desempate estável quando duas ofertas
+  // têm a mesma data.
+  const cronologica = [...ofertasModalAtual].sort((a,b)=>
+    String(a.dataOferta||'').localeCompare(String(b.dataOferta||'')) ||
+    String(a.regId||'').localeCompare(String(b.regId||''))
+  );
+  const numeroPorRegId = new Map(cronologica.map((o,i)=>[o.regId, i+1]));
   const ordenadas = [...ofertasModalAtual].sort((a,b)=> String(b.dataOferta||'').localeCompare(String(a.dataOferta||'')));
   box.innerHTML = ordenadas.map(o => {
     const statusCls = statusParaClasse(o.status);
@@ -2637,9 +2661,13 @@ function renderOfertasModal() {
     const dfOferta = dOf && !isNaN(dOf.getTime()) ? dOf.toLocaleDateString('pt-BR') : '—';
     const dfPag = dPg && !isNaN(dPg.getTime()) ? dPg.toLocaleDateString('pt-BR') : '—';
     const opcoes = STATUS_OFERTA_OPTIONS.map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('');
+    const numero = numeroPorRegId.get(o.regId) || '';
     return `<div class="oferta-item">
       <div class="oferta-item-top">
-        <span class="oferta-valor">${o.valor?('R$ '+o.valor):'—'}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="oferta-seq">Oferta ${numero}</span>
+          <span class="oferta-valor">${o.valor?('R$ '+o.valor):'—'}</span>
+        </div>
         <select class="status-pill-select ${statusCls}" onchange="editarStatusOferta('${o.regId}', this.value)">${opcoes}</select>
       </div>
       <div class="oferta-meta">Oferta: ${dfOferta} · Pagamento: ${dfPag}${o.posicaoBolsa?' · Bolsa: '+o.posicaoBolsa+' ¢/lb':''}</div>
@@ -2710,7 +2738,11 @@ async function salvarNovaOferta() {
     ofertasModalAtual.unshift(reg);
     renderOfertasModal();
     toggleNovaOfertaForm();
-    toastOk('Oferta registrada!');
+    const numeroNova = [...ofertasModalAtual].sort((a,b)=>
+      String(a.dataOferta||'').localeCompare(String(b.dataOferta||'')) ||
+      String(a.regId||'').localeCompare(String(b.regId||''))
+    ).findIndex(o => o.regId === regId) + 1;
+    toastOk(`Oferta ${numeroNova} registrada!`);
     // Atualiza o "último status" denormalizado no registro de classificação, tanto local
     // quanto na planilha, pra aparecer na lista do histórico sem precisar abrir o lote.
     c.ultimoStatusOferta = status;
